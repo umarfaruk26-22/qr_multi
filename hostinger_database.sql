@@ -16,10 +16,10 @@ CREATE TABLE IF NOT EXISTS `admins` (
     `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Default Administrator (Username: admin | Password: Admin@12345)
+-- Default Administrator (Username: Nexalogic | Password: Nexalogictechno@1026#)
 INSERT INTO `admins` (`id`, `username`, `password_hash`, `name`, `is_active`)
-VALUES (1, 'admin', 'scrypt:32768:8:1$u6uqB4Y3YGuJQoI2$91e765715636787c3b4181c1b8b98a800f50349c32dc75b292f123484a7a98f3d172cbc91445e4e5411c597e439a279697da21c2faf483e035b5b0eefc88e146', 'System Administrator', 1)
-ON DUPLICATE KEY UPDATE `username` = VALUES(`username`);
+VALUES (1, 'Nexalogic', 'scrypt:32768:8:1$BQ9y4vM9ch4DGD65$6436ac3f08e0fb75d4ff80e61cd887352918aab116f6dcdaf292b268fbddf519abc59426738a4fd5259ebc4dfa040fadf5e7d53d20755d4ada1ed040701f7e5c', 'Nexalogic Admin', 1)
+ON DUPLICATE KEY UPDATE `username` = VALUES(`username`), `password_hash` = VALUES(`password_hash`), `name` = VALUES(`name`);
 
 -- 2. Employees Table
 CREATE TABLE IF NOT EXISTS `employees` (
