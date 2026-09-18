@@ -58,17 +58,12 @@ def get_db_connection(database=None):
 def get_db_cursor(commit=False, dictionary=True):
     """
     Context manager for database cursor.
-    Acquires a connection from pool or direct connection, yields cursor,
-    handles auto-commit/rollback, and ensures proper cleanup.
+    Acquires a fresh connection, yields cursor, handles auto-commit/rollback,
+    and ensures proper cleanup (ideal for WSGI multi-worker environments).
     """
     conn = None
-    pool = get_connection_pool()
     try:
-        if pool:
-            conn = pool.get_connection()
-        else:
-            conn = get_db_connection()
-            
+        conn = get_db_connection()
         cursor = conn.cursor(dictionary=dictionary)
         try:
             yield cursor
