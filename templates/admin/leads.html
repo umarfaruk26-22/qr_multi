@@ -1,0 +1,338 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Visitor Leads | {{ company_settings.company_name }}{% endblock %}
+{% block page_title %}Visitor Leads & Visits{% endblock %}
+
+{% block admin_content %}
+<!-- Flash Messages -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div style="margin-bottom: 20px;">
+      {% for category, message in messages %}
+        <div class="badge badge-active" style="display: block; padding: 12px 16px; margin-bottom: 8px; font-size: 0.88rem; background: {% if category == 'success' %}rgba(34, 197, 94, 0.15){% else %}rgba(239, 68, 68, 0.15){% endif %}; border: 1px solid {% if category == 'success' %}rgba(34, 197, 94, 0.35){% else %}rgba(239, 68, 68, 0.35){% endif %}; color: {% if category == 'success' %}#4ade80{% else %}#f87171{% endif %}; border-radius: 10px;">
+          {{ message }}
+        </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+
+<!-- KPI Stats Grid -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon icon-purple">👥</div>
+    <div class="stat-content">
+      <div class="stat-value">{{ summary.total_leads }}</div>
+      <div class="stat-label">Total Visitor Leads</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon icon-cyan">📅</div>
+    <div class="stat-content">
+      <div class="stat-value">{{ summary.today_leads }}</div>
+      <div class="stat-label">Captured Today</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon icon-green">📈</div>
+    <div class="stat-content">
+      <div class="stat-value">{{ summary.month_leads }}</div>
+      <div class="stat-label">This Month</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon icon-amber">🏢</div>
+    <div class="stat-content">
+      <div class="stat-value">{{ summary.visited_employees_count }}</div>
+      <div class="stat-label">Profiles Visited</div>
+    </div>
+  </div>
+</div>
+
+<!-- Employee-wise Visit Breakdown ("Kis Employee Ko Kitne Logo Ne Visit Kiya") -->
+<div class="dashboard-card" style="margin-bottom: 24px;">
+  <div class="card-header-flex">
+    <div>
+      <h2 class="card-title">Employee Visit Breakdown</h2>
+      <p style="color: var(--text-dim); font-size: 0.82rem; margin-top: 2px;">
+        Total captured leads and visitors per employee profile
+      </p>
+    </div>
+    {% if employee_id %}
+      <a href="{{ url_for('admin.leads_view') }}" class="btn btn-outline btn-sm">Clear Employee Filter</a>
+    {% endif %}
+  </div>
+
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Designation</th>
+          <th>Total Visitor Leads</th>
+          <th>Latest Lead At</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if summary.employee_breakdown %}
+          {% for eb in summary.employee_breakdown %}
+          <tr style="{% if employee_id and employee_id|int == eb.employee_id %}background: rgba(99, 102, 241, 0.12);{% endif %}">
+            <td>
+              <div class="employee-table-cell">
+                {% if eb.profile_image %}
+                  <img src="/{{ eb.profile_image }}" class="table-avatar" alt="{{ eb.first_name }}">
+                {% else %}
+                  <div class="table-avatar">{{ eb.first_name[0] }}</div>
+                {% endif %}
+                <div>
+                  <a href="{{ url_for('admin.employee_details', id=eb.employee_id) }}" class="table-emp-name">
+                    {{ eb.first_name }} {{ eb.last_name }}
+                  </a>
+                  <div class="table-emp-sub">/{{ eb.slug }}</div>
+                </div>
+              </div>
+            </td>
+            <td>{{ eb.designation | default('—') }}</td>
+            <td>
+              <span class="badge {% if eb.lead_count > 0 %}badge-active{% else %}badge-inactive{% endif %}" style="font-size: 0.82rem; padding: 4px 10px;">
+                <strong>{{ eb.lead_count }}</strong> Leads
+              </span>
+            </td>
+            <td style="color: var(--text-dim); font-size: 0.84rem;">
+              {{ eb.last_lead_at.strftime('%b %d, %Y %H:%M') if eb.last_lead_at else 'No visits yet' }}
+            </td>
+            <td>
+              <div style="display: flex; gap: 6px;">
+                <a href="{{ url_for('admin.leads_view', employee_id=eb.employee_id) }}" class="btn btn-outline btn-sm {% if employee_id and employee_id|int == eb.employee_id %}active{% endif %}" title="View all leads for this employee">
+                  View Leads ({{ eb.lead_count }})
+                </a>
+                <a href="{{ url_for('employee.public_profile', slug=eb.slug) }}" target="_blank" class="btn btn-secondary btn-sm" title="View Public Card">
+                  Card ↗
+                </a>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 24px; color: var(--text-dim);">
+              No employees registered in system.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Main Leads Directory Table Card -->
+<div class="dashboard-card">
+  <!-- Header with Search, Filter & CSV Export -->
+  <div class="card-header-flex" style="flex-wrap: wrap; gap: 16px;">
+    <div>
+      <h2 class="card-title">All Captured Visitor Leads</h2>
+      <p style="color: var(--text-dim); font-size: 0.82rem; margin-top: 2px;">
+        Showing {{ leads|length }} of {{ total }} total captured records
+      </p>
+    </div>
+
+    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+      <a href="{{ url_for('admin.export_leads', employee_id=employee_id, search=search, format='excel') }}" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-color: #059669;" title="Download as Microsoft Excel compatible file">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+        <span>📊 Export Excel</span>
+      </a>
+
+      <a href="{{ url_for('admin.export_leads', employee_id=employee_id, search=search, format='csv') }}" class="btn btn-outline btn-sm" style="display: inline-flex; align-items: center; gap: 6px;" title="Download as standard CSV file">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+        <span>📄 Export CSV</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Filter Bar -->
+  <form method="GET" action="{{ url_for('admin.leads_view') }}" style="display: flex; gap: 10px; margin: 16px 0 20px 0; flex-wrap: wrap;">
+    <div style="flex: 1; min-width: 220px; position: relative;">
+      <input type="text" name="search" value="{{ search }}" class="form-control" placeholder="Search by visitor name, phone, email, city..." style="width: 100%; padding: 8px 12px; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #fff; font-size: 0.88rem;">
+    </div>
+
+    <div style="min-width: 180px;">
+      <select name="employee_id" class="form-control" style="width: 100%; padding: 8px 12px; background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 8px; color: #fff; font-size: 0.88rem;">
+        <option value="">All Employees</option>
+        {% for emp in all_employees %}
+          <option value="{{ emp.id }}" {% if employee_id and employee_id|int == emp.id %}selected{% endif %}>
+            {{ emp.first_name }} {{ emp.last_name }} ({{ emp.designation | default('Staff') }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <button type="submit" class="btn btn-secondary btn-sm" style="padding: 8px 16px;">
+      Filter
+    </button>
+    {% if search or employee_id %}
+      <a href="{{ url_for('admin.leads_view') }}" class="btn btn-outline btn-sm" style="padding: 8px 16px;">
+        Reset
+      </a>
+    {% endif %}
+  </form>
+
+  <!-- Leads Table -->
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Visitor Details</th>
+          <th>Visited Employee</th>
+          <th>Contact & Connect</th>
+          <th>DOB / Anniversary</th>
+          <th>Date & Source</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if leads %}
+          {% for lead in leads %}
+          <tr>
+            <!-- Visitor Name & City -->
+            <td>
+              <div style="font-weight: 600; color: #ffffff; font-size: 0.92rem;">
+                {{ lead.name }}
+              </div>
+              {% if lead.city %}
+                <div style="color: var(--text-dim); font-size: 0.8rem; display: flex; align-items: center; gap: 4px; margin-top: 2px;">
+                  <span>📍 {{ lead.city }}</span>
+                </div>
+              {% else %}
+                <div style="color: var(--text-dim); font-size: 0.78rem;">City: Not specified</div>
+              {% endif %}
+            </td>
+
+            <!-- Visited Employee -->
+            <td>
+              <div class="employee-table-cell">
+                {% if lead.emp_image %}
+                  <img src="/{{ lead.emp_image }}" class="table-avatar" alt="{{ lead.emp_first_name }}" style="width: 32px; height: 32px;">
+                {% else %}
+                  <div class="table-avatar" style="width: 32px; height: 32px; font-size: 0.8rem;">{{ lead.emp_first_name[0] }}</div>
+                {% endif %}
+                <div>
+                  <a href="{{ url_for('admin.employee_details', id=lead.employee_id) }}" class="table-emp-name" style="font-size: 0.88rem;">
+                    {{ lead.emp_first_name }} {{ lead.emp_last_name }}
+                  </a>
+                  <div class="table-emp-sub">/{{ lead.emp_slug }}</div>
+                </div>
+              </div>
+            </td>
+
+            <!-- Phone, Email & WhatsApp Action -->
+            <td>
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <div style="display: flex; align-items: center; gap: 6px;">
+                  <span style="color: #e2e8f0; font-size: 0.86rem; font-weight: 500;">{{ lead.phone }}</span>
+                  <!-- 1-Click WhatsApp Direct link for Admin -->
+                  <a href="https://wa.me/{{ lead.phone | replace('+', '') | replace(' ', '') | replace('-', '') }}" target="_blank" rel="noopener noreferrer" class="badge" style="background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.35); color: #4ade80; font-size: 0.72rem; padding: 2px 6px; text-decoration: none;" title="Chat with visitor on WhatsApp">
+                    💬 WhatsApp
+                  </a>
+                  <a href="tel:{{ lead.phone }}" class="badge" style="background: rgba(99, 102, 241, 0.15); border: 1px solid rgba(99, 102, 241, 0.35); color: #a5b4fc; font-size: 0.72rem; padding: 2px 6px; text-decoration: none;" title="Call visitor">
+                    📞 Call
+                  </a>
+                </div>
+                <a href="mailto:{{ lead.email }}" style="color: var(--text-dim); font-size: 0.8rem; text-decoration: none;" title="Send Email">
+                  ✉️ {{ lead.email }}
+                </a>
+              </div>
+            </td>
+
+            <!-- DOB & Anniversary -->
+            <td>
+              <div style="font-size: 0.82rem; color: #cbd5e1;">
+                <div><strong>DOB:</strong> {{ lead.dob.strftime('%d %b %Y') if lead.dob else '—' }}</div>
+                <div style="margin-top: 2px;"><strong>Anniversary:</strong> {{ lead.anniversary.strftime('%d %b %Y') if lead.anniversary else '—' }}</div>
+              </div>
+            </td>
+
+            <!-- Date & Source -->
+            <td>
+              <div style="font-size: 0.82rem; color: #f1f5f9;">
+                {{ lead.created_at.strftime('%b %d, %Y') if lead.created_at else '' }}
+              </div>
+              <div style="font-size: 0.76rem; color: var(--text-dim);">
+                {{ lead.created_at.strftime('%H:%M') if lead.created_at else '' }} • 
+                <span class="badge" style="font-size: 0.7rem; padding: 1px 5px; {% if lead.source == 'qr_scan' %}background: rgba(245, 158, 11, 0.15); color: #fcd34d;{% else %}background: rgba(56, 189, 248, 0.15); color: #7dd3fc;{% endif %}">
+                  {{ 'QR Scan' if lead.source == 'qr_scan' else 'Direct Web' }}
+                </span>
+              </div>
+            </td>
+
+            <!-- Actions (Delete) -->
+            <td>
+              <button type="button" class="btn btn-outline btn-sm" style="color: #f87171; border-color: rgba(239, 68, 68, 0.3);" onclick="openDeleteLeadModal({{ lead.id }}, '{{ lead.name | escape }}')" title="Delete Lead">
+                Delete
+              </button>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 36px 20px; color: var(--text-dim);">
+              <div style="font-size: 1.8rem; margin-bottom: 8px;">📋</div>
+              <p style="font-size: 0.95rem; font-weight: 500; color: #e2e8f0; margin-bottom: 4px;">No visitor leads found</p>
+              <p style="font-size: 0.82rem;">Visitors who scan employee QR codes or submit the connect form on public profiles will appear here.</p>
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination -->
+  {% if pages > 1 %}
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.06);">
+    <span style="font-size: 0.82rem; color: var(--text-dim);">Page {{ page }} of {{ pages }} ({{ total }} total leads)</span>
+    <div style="display: flex; gap: 8px;">
+      {% if page > 1 %}
+        <a href="{{ url_for('admin.leads_view', page=page-1, search=search, employee_id=employee_id) }}" class="btn btn-outline btn-sm">← Previous</a>
+      {% endif %}
+      {% if page < pages %}
+        <a href="{{ url_for('admin.leads_view', page=page+1, search=search, employee_id=employee_id) }}" class="btn btn-outline btn-sm">Next →</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Modal: Delete Lead Confirmation -->
+<div id="delete-lead-modal" class="modal-backdrop">
+  <div class="modal-content">
+    <h2 style="font-family: var(--font-heading); font-size: 1.3rem; color: var(--danger); margin-bottom: 8px;">Delete Visitor Lead</h2>
+    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">
+      Are you sure you want to delete lead record for <strong id="delete-lead-visitor-name" style="color: #fff;"></strong>? This action cannot be undone.
+    </p>
+    <form id="delete-lead-form" method="POST" action="">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div style="display: flex; gap: 12px; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeModal('delete-lead-modal')">Cancel</button>
+        <button type="submit" class="btn btn-danger btn-sm">Confirm Delete</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openDeleteLeadModal(leadId, visitorName) {
+  const modal = document.getElementById('delete-lead-modal');
+  const nameSpan = document.getElementById('delete-lead-visitor-name');
+  const form = document.getElementById('delete-lead-form');
+  if (nameSpan) nameSpan.textContent = visitorName;
+  if (form) form.action = '/admin/leads/' + leadId + '/delete';
+  if (modal) {
+    modal.classList.add('active');
+    document.body.style.overflow = 'hidden';
+  }
+}
+</script>
+{% endblock %}

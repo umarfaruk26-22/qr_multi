@@ -1,0 +1,226 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}{{ employee.first_name }} {{ employee.last_name }} - Details | {{ company_settings.company_name }}{% endblock %}
+{% block page_title %}{{ employee.first_name }} {{ employee.last_name }}{% endblock %}
+
+{% block admin_content %}
+<div class="details-main-grid">
+
+  <!-- Left Column: Employee Info Card -->
+  <div class="dashboard-card">
+    <div style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 24px;">
+      {% if employee.profile_image %}
+        <img src="/{{ employee.profile_image }}" class="table-avatar" style="width: 90px; height: 90px; margin-bottom: 12px;" alt="{{ employee.first_name }}">
+      {% else %}
+        <div class="table-avatar" style="width: 90px; height: 90px; font-size: 2rem; margin-bottom: 12px;">{{ employee.first_name[0] }}</div>
+      {% endif %}
+
+      <h2 style="font-family: var(--font-heading); font-size: 1.4rem; color: #fff;">{{ employee.first_name }} {{ employee.last_name }}</h2>
+      <p style="color: var(--secondary-color); font-weight: 600; font-size: 0.92rem; margin-top: 2px;">{{ employee.designation | default('Team Member') }}</p>
+
+      <div style="margin-top: 10px;">
+        <span id="status-badge-{{ employee.id }}" class="badge {% if employee.is_active %}badge-active{% else %}badge-inactive{% endif %}">
+          <span class="badge-dot"></span> {{ 'Active Profile' if employee.is_active else 'Inactive' }}
+        </span>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px; font-size: 0.88rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 20px;">
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-dim);">Public Profile:</span>
+        <a href="/{{ employee.slug }}" target="_blank" style="color: #818cf8; font-weight: 600;">
+          {{ base_url }}/{{ employee.slug }} ↗
+        </a>
+      </div>
+
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-dim);">QR Redirect URL:</span>
+        <span style="color: #cbd5e1;">{{ base_url }}/q/{{ employee.slug }}</span>
+      </div>
+
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-dim);">Phone:</span>
+        <span style="color: #fff;">{{ employee.phone | default('—') }}</span>
+      </div>
+
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-dim);">WhatsApp:</span>
+        <span style="color: #fff;">{{ employee.whatsapp | default('—') }}</span>
+      </div>
+
+      <div style="display: flex; justify-content: space-between;">
+        <span style="color: var(--text-dim);">Email:</span>
+        <span style="color: #fff;">{{ employee.email | default('—') }}</span>
+      </div>
+
+      {% if employee.bio %}
+      <div style="margin-top: 8px;">
+        <div style="color: var(--text-dim); margin-bottom: 4px;">Bio:</div>
+        <div style="color: var(--text-muted); background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px; line-height: 1.4;">
+          {{ employee.bio }}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Active Social Badges -->
+      <div style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 14px;">
+        <div style="color: var(--text-dim); font-size: 0.8rem; margin-bottom: 8px; font-weight: 600; text-transform: uppercase;">Configured Channels:</div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          {% if employee.google_review_url %}
+          <a href="{{ employee.google_review_url }}" target="_blank" title="Google Review" style="width: 32px; height: 32px; border-radius: 8px; background: #fff; display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+            </svg>
+          </a>
+          {% endif %}
+
+          {% if employee.whatsapp %}
+          <a href="https://wa.me/{{ employee.whatsapp }}" target="_blank" title="WhatsApp" style="width: 32px; height: 32px; border-radius: 8px; background: #25d366; display: flex; align-items: center; justify-content: center;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="#ffffff">
+              <path d="M17.472 14.382c-.301-.15-1.78-.879-2.056-.98-.276-.1-.476-.15-.677.15-.2.301-.777.98-.952 1.181-.176.2-.351.226-.652.075-.301-.15-1.272-.469-2.423-1.496-.895-.798-1.5-1.784-1.675-2.085-.176-.301-.019-.464.132-.614.136-.135.301-.351.452-.527.15-.176.2-.301.301-.501.101-.2.05-.376-.025-.526-.075-.15-.677-1.632-.928-2.238-.244-.59-.493-.51-.677-.52l-.577-.01c-.2 0-.526.075-.802.376-.276.301-1.053 1.028-1.053 2.508 0 1.48 1.078 2.91 1.229 3.111.15.2 2.122 3.24 5.14 4.544.718.31 1.279.496 1.716.635.722.23 1.38.197 1.9.12.579-.087 1.78-.728 2.03-1.43.251-.702.251-1.304.176-1.43-.075-.126-.276-.201-.577-.351zM12.042 21.93h-.008c-1.77 0-3.506-.476-5.025-1.376l-.36-.214-3.738.98 1-3.642-.234-.373c-.987-1.572-1.509-3.39-1.509-5.26 0-5.508 4.482-9.99 9.993-9.99 2.668 0 5.176 1.04 7.062 2.928 1.886 1.888 2.924 4.397 2.923 7.067 0 5.509-4.482 9.99-9.989 9.99zm8.53-18.498C18.28 1.135 15.276 0 12.042 0 5.402 0 .005 5.397.005 12.037c0 2.12.553 4.19 1.606 6.014L0 24l6.115-1.604c1.761.96 3.754 1.467 5.922 1.467h.005c6.638 0 12.037-5.398 12.037-12.038 0-3.216-1.252-6.24-3.507-8.494z"/>
+            </svg>
+          </a>
+          {% endif %}
+
+          {% if employee.instagram_url %}
+          <a href="{{ employee.instagram_url }}" target="_blank" title="Instagram" style="width: 32px; height: 32px; border-radius: 8px; background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%); display: flex; align-items: center; justify-content: center;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#ffffff">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+            </svg>
+          </a>
+          {% endif %}
+
+          {% if employee.linkedin_url %}
+          <a href="{{ employee.linkedin_url }}" target="_blank" title="LinkedIn" style="width: 32px; height: 32px; border-radius: 8px; background: #0077b5; display: flex; align-items: center; justify-content: center;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="#ffffff">
+              <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+            </svg>
+          </a>
+          {% endif %}
+
+          {% if employee.facebook_url %}
+          <a href="{{ employee.facebook_url }}" target="_blank" title="Facebook" style="width: 32px; height: 32px; border-radius: 8px; background: #1877f2; display: flex; align-items: center; justify-content: center;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="#ffffff">
+              <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+            </svg>
+          </a>
+          {% endif %}
+
+          {% if employee.youtube_url %}
+          <a href="{{ employee.youtube_url }}" target="_blank" title="YouTube" style="width: 32px; height: 32px; border-radius: 8px; background: #ff0000; display: flex; align-items: center; justify-content: center;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="#ffffff">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+          </a>
+          {% endif %}
+
+          {% if employee.website_url %}
+          <a href="{{ employee.website_url }}" target="_blank" title="Website" style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, #4f46e5, #06b6d4); display: flex; align-items: center; justify-content: center;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div style="display: flex; gap: 10px; margin-top: 24px; flex-wrap: wrap;">
+      <a href="{{ url_for('admin.edit_employee', id=employee.id) }}" class="btn btn-primary btn-sm" style="flex: 1;">
+        ✏️ Edit Profile
+      </a>
+      <button type="button" class="btn btn-outline btn-sm btn-toggle-status" data-id="{{ employee.id }}">
+        {{ 'Deactivate' if employee.is_active else 'Activate' }}
+      </button>
+      <button type="button" class="btn btn-outline btn-sm" onclick="copyToClipboard('{{ base_url }}/{{ employee.slug }}', 'Profile URL copied!')">
+        📋 Copy Link
+      </button>
+    </div>
+  </div>
+
+  <!-- Right Column: QR Codes & Individual Analytics -->
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+
+    <!-- QR Code Center Card -->
+    <div class="dashboard-card">
+      <div class="card-header-flex">
+        <h2 class="card-title">QR Code Assets</h2>
+        <span style="font-size: 0.8rem; color: var(--text-dim);">Permanent URL ({{ base_url }}/q/{{ employee.slug }})</span>
+      </div>
+
+      <div style="display: flex; gap: 24px; align-items: center; flex-wrap: wrap;">
+        <div style="background: #fff; padding: 12px; border-radius: 16px; display: inline-block;">
+          <img src="/{{ employee.png_path }}" alt="QR Code" style="width: 140px; height: 140px; object-fit: contain;">
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 200px;">
+          <div style="font-size: 0.86rem; color: var(--text-muted); line-height: 1.4;">
+            Every QR code points to the dynamic scanner route <code>/q/{{ employee.slug }}</code> which logs analytics and opens the profile.
+          </div>
+          
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <a href="{{ url_for('qr.download_qr', employee_id=employee.id, file_format='png') }}" class="btn btn-primary btn-sm">
+              ⬇ Download PNG
+            </a>
+            <a href="{{ url_for('qr.download_qr', employee_id=employee.id, file_format='svg') }}" class="btn btn-secondary btn-sm">
+              ⬇ Download SVG
+            </a>
+            <a href="{{ url_for('qr.download_qr', employee_id=employee.id, file_format='branded') }}" class="btn btn-outline btn-sm">
+              🎨 Download Branded Card
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Engagement Analytics for this Employee -->
+    <div class="dashboard-card">
+      <h2 class="card-title" style="margin-bottom: 18px;">Engagement Analytics</h2>
+
+      <div class="stats-grid" style="grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); margin-bottom: 0;">
+        <div class="stat-card" style="padding: 16px;">
+          <div class="stat-content">
+            <div class="stat-value" style="font-size: 1.4rem;">{{ analytics.profile_views }}</div>
+            <div class="stat-label">Profile Views</div>
+          </div>
+        </div>
+
+        <div class="stat-card" style="padding: 16px;">
+          <div class="stat-content">
+            <div class="stat-value" style="font-size: 1.4rem;">{{ analytics.qr_scans }}</div>
+            <div class="stat-label">QR Scans</div>
+          </div>
+        </div>
+
+        <div class="stat-card" style="padding: 16px;">
+          <div class="stat-content">
+            <div class="stat-value" style="font-size: 1.4rem; color: #34d399;">{{ analytics.whatsapp_clicks }}</div>
+            <div class="stat-label">WhatsApp</div>
+          </div>
+        </div>
+
+        <div class="stat-card" style="padding: 16px;">
+          <div class="stat-content">
+            <div class="stat-value" style="font-size: 1.4rem; color: #fbbf24;">{{ analytics.google_review_clicks }}</div>
+            <div class="stat-label">Google Reviews</div>
+          </div>
+        </div>
+
+        <div class="stat-card" style="padding: 16px;">
+          <div class="stat-content">
+            <div class="stat-value" style="font-size: 1.4rem; color: #818cf8;">{{ analytics.total_clicks }}</div>
+            <div class="stat-label">Total Clicks</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,156 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Analytics & Engagement | {{ company_settings.company_name }}{% endblock %}
+{% block page_title %}Analytics & Engagement Overview{% endblock %}
+
+{% block admin_content %}
+<!-- Metric Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon icon-cyan">👁️</div>
+    <div class="stat-content">
+      <div class="stat-value">{{ summary.total_views }}</div>
+      <div class="stat-label">Total Profile Views</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon icon-amber">📱</div>
+    <div class="stat-content">
+      <div class="stat-value">{{ summary.total_scans }}</div>
+      <div class="stat-label">Total QR Scans</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon icon-green">💬</div>
+    <div class="stat-content">
+      <div class="stat-value">{{ summary.total_whatsapp }}</div>
+      <div class="stat-label">WhatsApp Clicks</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon icon-rose">⭐</div>
+    <div class="stat-content">
+      <div class="stat-value">{{ summary.total_reviews }}</div>
+      <div class="stat-label">Google Review Clicks</div>
+    </div>
+  </div>
+</div>
+
+<!-- Employee Engagement Leaderboard -->
+<div class="dashboard-card">
+  <div class="card-header-flex">
+    <h2 class="card-title">Employee Engagement Leaderboard</h2>
+    <span style="font-size: 0.82rem; color: var(--text-dim);">Ranked by overall visibility & interactions</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Employee</th>
+          <th>Profile Views</th>
+          <th>QR Scans</th>
+          <th>WhatsApp</th>
+          <th>Google Review</th>
+          <th>Total Clicks</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if employee_stats %}
+          {% for item in employee_stats %}
+          {% set emp = item.employee %}
+          {% set m = item.metrics %}
+          <tr>
+            <td>
+              <span style="font-weight: 700; color: {% if loop.index == 1 %}#fbbf24{% elif loop.index == 2 %}#cbd5e1{% elif loop.index == 3 %}#d97706{% else %}var(--text-dim){% endif %};">
+                #{{ loop.index }}
+              </span>
+            </td>
+            <td>
+              <div class="employee-table-cell">
+                {% if emp.profile_image %}
+                  <img src="/{{ emp.profile_image }}" class="table-avatar" alt="{{ emp.first_name }}">
+                {% else %}
+                  <div class="table-avatar">{{ emp.first_name[0] }}</div>
+                {% endif %}
+                <div>
+                  <a href="{{ url_for('admin.employee_details', id=emp.id) }}" class="table-emp-name">
+                    {{ emp.first_name }} {{ emp.last_name }}
+                  </a>
+                  <div class="table-emp-sub">{{ emp.designation | default('—') }}</div>
+                </div>
+              </div>
+            </td>
+            <td><strong>{{ m.profile_views }}</strong></td>
+            <td><strong>{{ m.qr_scans }}</strong></td>
+            <td style="color: #34d399;">{{ m.whatsapp_clicks }}</td>
+            <td style="color: #fbbf24;">{{ m.google_review_clicks }}</td>
+            <td><span class="badge" style="background: rgba(79, 70, 229, 0.15); color: #818cf8;">{{ m.total_clicks }}</span></td>
+            <td>
+              <a href="{{ url_for('admin.employee_details', id=emp.id) }}" class="btn btn-outline btn-sm">View</a>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 24px; color: var(--text-dim);">No employee analytics available yet.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Detailed Activity Logs -->
+<div class="dashboard-card">
+  <div class="card-header-flex">
+    <h2 class="card-title">Recent Event History (Last 50 Events)</h2>
+  </div>
+
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Employee</th>
+          <th>Event Type</th>
+          <th>Device</th>
+          <th>Referrer</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if recent_logs %}
+          {% for log in recent_logs %}
+          <tr>
+            <td>{{ log.created_at.strftime('%b %d, %Y - %H:%M:%S') if log.created_at else '—' }}</td>
+            <td>
+              <a href="{{ url_for('admin.employee_details', id=log.employee_id) }}" style="color: #f8fafc; font-weight: 500;">
+                {{ log.first_name }} {{ log.last_name }}
+              </a>
+            </td>
+            <td>
+              <span class="badge {% if log.event_type == 'qr_scan' %}badge-active{% elif log.event_type == 'profile_view' %}badge-active{% else %}badge-inactive{% endif %}">
+                {{ log.event_type | replace('_', ' ') | title }}
+              </span>
+            </td>
+            <td>{{ log.device_type | capitalize }}</td>
+            <td style="color: var(--text-dim); max-width: 250px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              {{ log.referrer | default('Direct / QR Scan') }}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 24px; color: var(--text-dim);">No events logged yet.</td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

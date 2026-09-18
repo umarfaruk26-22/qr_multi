@@ -1,0 +1,138 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Settings & Branding | {{ company_settings.company_name }}{% endblock %}
+{% block page_title %}Settings & Company Branding{% endblock %}
+
+{% block admin_content %}
+<div class="settings-main-grid">
+
+  <!-- Column 1: Company Profile & Visual Branding -->
+  <div class="dashboard-card">
+    <div class="card-header-flex">
+      <h2 class="card-title">🏢 Company Profile & Branding</h2>
+    </div>
+
+    <form method="POST" action="{{ url_for('admin.settings_view') }}" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <div class="form-grid">
+        <div class="form-group full-width">
+          <label class="form-label" for="company_name">Company Name <span class="required">*</span></label>
+          <input type="text" id="company_name" name="company_name" class="form-input" value="{{ settings.company_name }}" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="company_phone">Company Phone</label>
+          <input type="text" id="company_phone" name="company_phone" class="form-input" value="{{ settings.company_phone | default('') }}">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="company_email">Company Email</label>
+          <input type="email" id="company_email" name="company_email" class="form-input" value="{{ settings.company_email | default('') }}">
+        </div>
+
+        <div class="form-group full-width">
+          <label class="form-label" for="company_website">Official Website URL</label>
+          <input type="url" id="company_website" name="company_website" class="form-input" value="{{ settings.company_website | default('') }}">
+        </div>
+
+        <!-- Dynamic Brand Colors -->
+        <div class="form-group">
+          <label class="form-label" for="primary_color">Primary Brand Color</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="color" id="primary_color_picker" value="{{ settings.primary_color | default('#4f46e5') }}" 
+                   style="width: 44px; height: 44px; border: none; border-radius: 8px; cursor: pointer; background: transparent;"
+                   oninput="document.getElementById('primary_color').value = this.value">
+            <input type="text" id="primary_color" name="primary_color" class="form-input" value="{{ settings.primary_color | default('#4f46e5') }}"
+                   oninput="document.getElementById('primary_color_picker').value = this.value">
+          </div>
+          <span class="form-help">Buttons, primary accents, glow rings</span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="secondary_color">Secondary Brand Color</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="color" id="secondary_color_picker" value="{{ settings.secondary_color | default('#06b6d4') }}" 
+                   style="width: 44px; height: 44px; border: none; border-radius: 8px; cursor: pointer; background: transparent;"
+                   oninput="document.getElementById('secondary_color').value = this.value">
+            <input type="text" id="secondary_color" name="secondary_color" class="form-input" value="{{ settings.secondary_color | default('#06b6d4') }}"
+                   oninput="document.getElementById('secondary_color_picker').value = this.value">
+          </div>
+          <span class="form-help">Subtitle highlights, badges, gradient meshes</span>
+        </div>
+
+        <div class="form-group full-width">
+          <label class="form-label" for="default_whatsapp_message">Default WhatsApp Message Template</label>
+          <textarea id="default_whatsapp_message" name="default_whatsapp_message" class="form-textarea">{{ settings.default_whatsapp_message | default('Hello, I visited your digital profile and would like to connect.') }}</textarea>
+          <span class="form-help">Prefilled in the customer's WhatsApp chat when they tap the WhatsApp button</span>
+        </div>
+
+        <!-- Global Company Logo -->
+        <div class="form-group full-width">
+          <label class="form-label" for="company_logo">Upload Company Logo</label>
+          <div class="image-upload-wrapper">
+            {% if settings.company_logo %}
+              <img id="logo_preview" src="/{{ settings.company_logo }}" class="preview-thumb" alt="Company Logo">
+            {% else %}
+              <div id="logo_placeholder" class="preview-thumb">🏢</div>
+              <img id="logo_preview" src="" class="preview-thumb" style="display: none;" alt="Preview">
+            {% endif %}
+            <input type="file" id="company_logo" name="company_logo" accept="image/png, image/jpeg, image/webp" class="form-input" style="padding: 8px;">
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 24px;">
+        <button type="submit" class="btn btn-primary" style="padding: 12px 24px;">
+          Save Brand & Company Settings
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Column 2: Admin Password & Security -->
+  <div style="display: flex; flex-direction: column; gap: 24px;">
+    <div class="dashboard-card">
+      <div class="card-header-flex">
+        <h2 class="card-title">🔐 Change Admin Password</h2>
+      </div>
+
+      <form method="POST" action="{{ url_for('auth.change_password') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" for="current_password">Current Password</label>
+          <input type="password" id="current_password" name="current_password" class="form-input" required>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="form-label" for="new_password">New Password</label>
+          <input type="password" id="new_password" name="new_password" class="form-input" minlength="6" required>
+          <span class="form-help">Minimum 6 characters</span>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 24px;">
+          <label class="form-label" for="confirm_password">Confirm New Password</label>
+          <input type="password" id="confirm_password" name="confirm_password" class="form-input" minlength="6" required>
+        </div>
+
+        <button type="submit" class="btn btn-outline" style="width: 100%;">
+          Update Password
+        </button>
+      </form>
+    </div>
+
+    <!-- Quick System Diagnostics Info -->
+    <div class="dashboard-card">
+      <h2 class="card-title" style="margin-bottom: 12px; font-size: 1rem;">System Diagnostics</h2>
+      <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.82rem; color: var(--text-dim);">
+        <div>Base URL: <strong style="color: #cbd5e1;">{{ base_url }}</strong></div>
+        <div>Database: <strong style="color: #cbd5e1;">MySQL (Port 3306)</strong></div>
+        <div>QR Engine: <strong style="color: #cbd5e1;">Python qrcode + Pillow (PNG/SVG/Branded)</strong></div>
+        <div>Status: <span style="color: #34d399; font-weight: 600;">● Operational</span></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

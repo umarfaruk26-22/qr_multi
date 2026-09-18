@@ -1,0 +1,162 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Employees Directory | {{ company_settings.company_name }}{% endblock %}
+{% block page_title %}Employee Profiles ({{ total }}){% endblock %}
+
+{% block admin_content %}
+<div class="dashboard-card">
+  <!-- Search & Filter Controls -->
+  <form method="GET" action="{{ url_for('admin.employees_list') }}" class="filter-bar">
+    <div style="display: flex; gap: 12px; flex-wrap: wrap; flex: 1;">
+      <div class="search-box">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="color: var(--text-dim);"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+        <input type="text" name="search" placeholder="Search by name, slug, designation..." value="{{ search }}">
+      </div>
+
+      <select name="status" class="form-select" onchange="this.form.submit()" style="width: 160px; padding: 8px 12px;">
+        <option value="all" {% if status == 'all' %}selected{% endif %}>All Statuses</option>
+        <option value="active" {% if status == 'active' %}selected{% endif %}>Active ({{ counts.active }})</option>
+        <option value="inactive" {% if status == 'inactive' %}selected{% endif %}>Inactive ({{ counts.inactive }})</option>
+      </select>
+
+      {% if search or status != 'all' %}
+      <a href="{{ url_for('admin.employees_list') }}" class="btn btn-outline btn-sm" style="padding: 8px 12px;">Reset</a>
+      {% endif %}
+    </div>
+
+    <a href="{{ url_for('admin.add_employee') }}" class="btn btn-primary">
+      + Add New Employee
+    </a>
+  </form>
+
+  <!-- Employees Table -->
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Employee</th>
+          <th>Designation</th>
+          <th>Contact</th>
+          <th>Public URL</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if employees %}
+          {% for emp in employees %}
+          <tr>
+            <td>
+              <div class="employee-table-cell">
+                {% if emp.profile_image %}
+                  <img src="/{{ emp.profile_image }}" class="table-avatar" alt="{{ emp.first_name }}">
+                {% else %}
+                  <div class="table-avatar">{{ emp.first_name[0] }}</div>
+                {% endif %}
+                <div>
+                  <a href="{{ url_for('admin.employee_details', id=emp.id) }}" class="table-emp-name">
+                    {{ emp.first_name }} {{ emp.last_name }}
+                  </a>
+                  <div class="table-emp-sub">Added {{ emp.created_at.strftime('%b %d, %Y') if emp.created_at else '' }}</div>
+                </div>
+              </div>
+            </td>
+            <td>{{ emp.designation | default('—') }}</td>
+            <td>
+              <div style="font-size: 0.84rem; color: #cbd5e1;">{{ emp.phone | default('—') }}</div>
+              <div style="font-size: 0.76rem; color: var(--text-dim);">{{ emp.email | default('') }}</div>
+            </td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <a href="/{{ emp.slug }}" target="_blank" style="color: #818cf8; font-weight: 500; font-size: 0.85rem;">
+                  /{{ emp.slug }}
+                </a>
+                <button type="button" class="btn-sm btn-outline" style="padding: 2px 6px; font-size: 0.72rem;" 
+                        onclick="copyToClipboard('{{ base_url }}/{{ emp.slug }}', 'Profile URL copied!')" title="Copy URL">
+                  📋
+                </button>
+              </div>
+            </td>
+            <td>
+              <span id="status-badge-{{ emp.id }}" class="badge {% if emp.is_active %}badge-active{% else %}badge-inactive{% endif %}">
+                <span class="badge-dot"></span> {{ 'Active' if emp.is_active else 'Inactive' }}
+              </span>
+            </td>
+            <td>
+              <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+                <!-- QR Code Modal Button -->
+                <button type="button" class="btn btn-outline btn-sm btn-preview-qr"
+                        data-id="{{ emp.id }}"
+                        data-name="{{ emp.first_name }} {{ emp.last_name }}"
+                        data-qr-img="/{{ emp.png_path }}"
+                        data-profile-url="{{ base_url }}/{{ emp.slug }}"
+                        title="View & Download QR">
+                  QR
+                </button>
+
+                <!-- Edit Button -->
+                <a href="{{ url_for('admin.edit_employee', id=emp.id) }}" class="btn btn-secondary btn-sm" title="Edit Profile">
+                  Edit
+                </a>
+
+                <!-- Status Toggle Button -->
+                <button type="button" class="btn btn-outline btn-sm btn-toggle-status" data-id="{{ emp.id }}" title="Toggle Active/Inactive">
+                  {{ 'Deactivate' if emp.is_active else 'Activate' }}
+                </button>
+
+                <!-- Delete Button -->
+                <button type="button" class="btn btn-outline btn-sm btn-trigger-delete" 
+                        data-id="{{ emp.id }}" 
+                        data-name="{{ emp.first_name }} {{ emp.last_name }}"
+                        style="color: #f87171;" title="Delete Profile">
+                  🗑️
+                </button>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="6" style="text-align: center; padding: 36px; color: var(--text-dim);">
+              No employees match your search criteria.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Pagination Controls -->
+  {% if pages > 1 %}
+  <div class="pagination-container">
+    <div style="font-size: 0.85rem; color: var(--text-dim);">
+      Showing page {{ page }} of {{ pages }} ({{ total }} total employees)
+    </div>
+
+    <div class="pagination-controls">
+      {% if page > 1 %}
+        <a href="{{ url_for('admin.employees_list', page=page-1, search=search, status=status) }}" class="page-btn">Previous</a>
+      {% else %}
+        <span class="page-btn disabled">Previous</span>
+      {% endif %}
+
+      {% for p in range(1, pages + 1) %}
+        {% if p == page %}
+          <span class="page-btn active">{{ p }}</span>
+        {% elif p <= 3 or p >= pages - 1 or (p >= page - 1 and p <= page + 1) %}
+          <a href="{{ url_for('admin.employees_list', page=p, search=search, status=status) }}" class="page-btn">{{ p }}</a>
+        {% elif p == 4 or p == pages - 2 %}
+          <span class="page-btn disabled">...</span>
+        {% endif %}
+      {% endfor %}
+
+      {% if page < pages %}
+        <a href="{{ url_for('admin.employees_list', page=page+1, search=search, status=status) }}" class="page-btn">Next</a>
+      {% else %}
+        <span class="page-btn disabled">Next</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

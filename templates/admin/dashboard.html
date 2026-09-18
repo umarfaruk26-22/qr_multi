@@ -1,0 +1,248 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Dashboard | {{ company_settings.company_name }}{% endblock %}
+{% block page_title %}System Overview{% endblock %}
+
+{% block admin_content %}
+<!-- Metric Stats Grid -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon icon-purple">👥</div>
+    <div class="stat-content">
+      <div class="stat-value">{{ counts.total }}</div>
+      <div class="stat-label">Total Employees</div>
+    </div>
+  </div>
+
+  <div class="stat-card" style="border: 1px solid rgba(99, 102, 241, 0.3); background: rgba(99, 102, 241, 0.08);">
+    <div class="stat-icon" style="background: rgba(99, 102, 241, 0.2); color: #a5b4fc;">📋</div>
+    <div class="stat-content">
+      <div class="stat-value" style="color: #a5b4fc;">{{ lead_summary.total_leads }}</div>
+      <div class="stat-label">Visitor Leads (Total)</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon icon-cyan">👁️</div>
+    <div class="stat-content">
+      <div class="stat-value">{{ summary.total_views }}</div>
+      <div class="stat-label">Profile Views</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon icon-amber">📱</div>
+    <div class="stat-content">
+      <div class="stat-value">{{ summary.total_scans }}</div>
+      <div class="stat-label">QR Code Scans</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon icon-green">💬</div>
+    <div class="stat-content">
+      <div class="stat-value">{{ summary.total_whatsapp }}</div>
+      <div class="stat-label">WhatsApp Clicks</div>
+    </div>
+  </div>
+
+  <div class="stat-card">
+    <div class="stat-icon icon-rose">⭐</div>
+    <div class="stat-content">
+      <div class="stat-value">{{ summary.total_reviews }}</div>
+      <div class="stat-label">Google Reviews</div>
+    </div>
+  </div>
+</div>
+
+<!-- Recent Visitor Leads Section -->
+<div class="dashboard-card" style="margin-bottom: 24px;">
+  <div class="card-header-flex">
+    <div>
+      <h2 class="card-title">Recent Visitor Leads</h2>
+      <p style="color: var(--text-dim); font-size: 0.82rem; margin-top: 2px;">
+        Latest visitors who scanned QR codes and shared their contact details
+      </p>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+      <a href="{{ url_for('admin.export_leads', format='excel') }}" class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 6px; background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-color: #059669;" title="Download all leads to Excel">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line></svg>
+        <span>📊 Export Leads</span>
+      </a>
+      <a href="{{ url_for('admin.leads_view') }}" class="btn btn-outline btn-sm">
+        View All ({{ lead_summary.total_leads }}) →
+      </a>
+    </div>
+  </div>
+
+  <div class="table-responsive">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Visitor Name</th>
+          <th>Contact & WhatsApp</th>
+          <th>Visited Employee</th>
+          <th>City</th>
+          <th>Captured Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% if recent_leads %}
+          {% for lead in recent_leads %}
+          <tr>
+            <td>
+              <div style="font-weight: 600; color: #ffffff; font-size: 0.9rem;">
+                {{ lead.name }}
+              </div>
+              <div style="color: var(--text-dim); font-size: 0.78rem;">
+                {{ lead.email }}
+              </div>
+            </td>
+            <td>
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font-size: 0.85rem; color: #e2e8f0;">{{ lead.phone }}</span>
+                <a href="https://wa.me/{{ lead.phone | replace('+', '') | replace(' ', '') | replace('-', '') }}" target="_blank" rel="noopener noreferrer" class="badge" style="background: rgba(34, 197, 94, 0.15); border: 1px solid rgba(34, 197, 94, 0.35); color: #4ade80; font-size: 0.72rem; padding: 2px 6px; text-decoration: none;" title="Chat with visitor on WhatsApp">
+                  💬 Chat
+                </a>
+              </div>
+            </td>
+            <td>
+              <a href="{{ url_for('admin.employee_details', id=lead.employee_id) }}" class="table-emp-name" style="font-size: 0.86rem;">
+                {{ lead.emp_first_name }} {{ lead.emp_last_name }}
+              </a>
+              <div class="table-emp-sub">/{{ lead.emp_slug }}</div>
+            </td>
+            <td style="color: var(--text-dim); font-size: 0.82rem;">
+              {{ lead.city | default('—') }}
+            </td>
+            <td style="color: var(--text-dim); font-size: 0.82rem;">
+              {{ lead.created_at.strftime('%b %d, %H:%M') if lead.created_at else 'Just now' }}
+            </td>
+          </tr>
+          {% endfor %}
+        {% else %}
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 24px; color: var(--text-dim);">
+              No visitor leads captured yet.
+            </td>
+          </tr>
+        {% endif %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+
+<!-- Layout Two Columns: Recent Employees & Real-Time Activity -->
+<div class="dashboard-main-grid">
+  
+  <!-- Recent Employees Card -->
+  <div class="dashboard-card">
+    <div class="card-header-flex">
+      <h2 class="card-title">Recent Employees</h2>
+      <a href="{{ url_for('admin.employees_list') }}" class="btn btn-outline btn-sm">View All ({{ counts.total }})</a>
+    </div>
+
+    <div class="table-responsive">
+      <table class="admin-table">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Designation</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% if recent_employees %}
+            {% for emp in recent_employees %}
+            <tr>
+              <td>
+                <div class="employee-table-cell">
+                  {% if emp.profile_image %}
+                    <img src="/{{ emp.profile_image }}" class="table-avatar" alt="{{ emp.first_name }}">
+                  {% else %}
+                    <div class="table-avatar">{{ emp.first_name[0] }}</div>
+                  {% endif %}
+                  <div>
+                    <a href="{{ url_for('admin.employee_details', id=emp.id) }}" class="table-emp-name">
+                      {{ emp.first_name }} {{ emp.last_name }}
+                    </a>
+                    <div class="table-emp-sub">/{{ emp.slug }}</div>
+                  </div>
+                </div>
+              </td>
+              <td>{{ emp.designation | default('—') }}</td>
+              <td>
+                <span id="status-badge-{{ emp.id }}" class="badge {% if emp.is_active %}badge-active{% else %}badge-inactive{% endif %}">
+                  <span class="badge-dot"></span> {{ 'Active' if emp.is_active else 'Inactive' }}
+                </span>
+              </td>
+              <td>
+                <div style="display: flex; gap: 6px;">
+                  <button type="button" class="btn btn-outline btn-sm btn-preview-qr"
+                          data-id="{{ emp.id }}"
+                          data-name="{{ emp.first_name }} {{ emp.last_name }}"
+                          data-qr-img="/{{ emp.png_path }}"
+                          data-profile-url="{{ base_url }}/{{ emp.slug }}">
+                    QR
+                  </button>
+                  <a href="{{ url_for('admin.employee_details', id=emp.id) }}" class="btn btn-secondary btn-sm">
+                    Details
+                  </a>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          {% else %}
+            <tr>
+              <td colspan="4" style="text-align: center; padding: 24px; color: var(--text-dim);">
+                No employee profiles created yet. Click "+ Add Employee" to get started.
+              </td>
+            </tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Real-Time Activity Feed -->
+  <div class="dashboard-card">
+    <div class="card-header-flex">
+      <h2 class="card-title">Live Activity</h2>
+      <a href="{{ url_for('admin.analytics_view') }}" class="btn btn-outline btn-sm">Full Report</a>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      {% if recent_logs %}
+        {% for log in recent_logs %}
+        <div style="display: flex; align-items: flex-start; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.04);">
+          <div style="font-size: 1.2rem; padding: 6px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+            {% if log.event_type == 'profile_view' %}👁️
+            {% elif log.event_type == 'qr_scan' %}📱
+            {% elif log.event_type == 'whatsapp_click' %}💬
+            {% elif log.event_type == 'google_review_click' %}⭐
+            {% else %}🔗{% endif %}
+          </div>
+          <div style="flex: 1;">
+            <div style="font-size: 0.88rem; color: #f1f5f9; font-weight: 500;">
+              <strong>{{ log.first_name }} {{ log.last_name }}</strong> 
+              <span style="color: var(--text-dim); font-size: 0.82rem;">
+                ({{ log.event_type | replace('_', ' ') | title }})
+              </span>
+            </div>
+            <div style="font-size: 0.76rem; color: var(--text-dim); margin-top: 2px;">
+              {{ log.device_type | capitalize }} • {{ log.created_at.strftime('%b %d, %H:%M') if log.created_at else 'Just now' }}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p style="text-align: center; color: var(--text-dim); padding: 32px 0;">
+          No visitor events logged yet.
+        </p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

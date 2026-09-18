@@ -1,0 +1,760 @@
+{% extends "base.html" %}
+
+{% block title %}
+{% if is_unavailable %}
+  Profile Unavailable | {{ company_settings.company_name }}
+{% else %}
+  {{ employee.first_name }} {{ employee.last_name }} | {{ employee.designation | default(company_settings.company_name) }}
+{% endif %}
+{% endblock %}
+
+{% block meta %}
+{% if not is_unavailable %}
+<meta name="description" content="Connect with {{ employee.first_name }} {{ employee.last_name }} ({{ employee.designation }}) at {{ company_settings.company_name }}. Scan QR, connect on WhatsApp, or leave a review.">
+<meta property="og:title" content="{{ employee.first_name }} {{ employee.last_name }} - {{ employee.designation }}">
+<meta property="og:description" content="{{ employee.bio | default('Connect with me via my official digital profile.') }}">
+<meta property="og:type" content="profile">
+<meta property="og:url" content="{{ base_url }}/{{ employee.slug }}">
+{% if employee.profile_image %}
+<meta property="og:image" content="{{ base_url }}/{{ employee.profile_image }}">
+{% endif %}
+{% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}">
+{% endblock %}
+
+{% block body_class %}public-body-fullpage{% endblock %}
+
+{% block content %}
+<div class="fullpage-layout-wrapper" 
+     {% if not is_unavailable %}
+     data-employee-id="{{ employee.id }}" 
+     data-employee-name="{{ employee.first_name }} {{ employee.last_name }}"
+     data-employee-role="{{ employee.designation | default('') }}"
+     data-gmb-url="{{ employee.google_review_url | default('') }}"
+     data-profile-url="{{ base_url }}/{{ employee.slug }}"
+     data-review-categories="{{ review_categories | default([]) | join(',') }}"
+     {% endif %}>
+
+  <!-- Floating Brand Topbar -->
+  <header class="public-topbar">
+    <div class="topbar-inner">
+      <div class="topbar-brand">
+        {% if not is_unavailable and employee and employee.profile_image %}
+          <img src="/{{ employee.profile_image }}" alt="{{ employee.first_name }} {{ employee.last_name }}" class="topbar-logo-img" style="width: 38px; height: 38px; border-radius: 50%; object-fit: cover; border: 2px solid rgba(255, 255, 255, 0.2);">
+        {% elif company_settings.company_logo %}
+          <img src="/{{ company_settings.company_logo }}" alt="{{ company_settings.company_name }}" class="topbar-logo-img">
+        {% elif not is_unavailable and employee %}
+          <div class="topbar-logo-fallback" style="background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); color: #fff; font-weight: 700; font-size: 0.95rem; border-radius: 50%;">
+            {{ employee.first_name[0] }}{{ employee.last_name[0] if employee.last_name else '' }}
+          </div>
+        {% else %}
+          <div class="topbar-logo-fallback">🏢</div>
+        {% endif %}
+        <div class="topbar-brand-text">
+          {% if not is_unavailable and employee %}
+            <span class="topbar-company-name">{{ employee.first_name }} {{ employee.last_name }}</span>
+            <span class="topbar-verified-tag">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              {{ employee.designation | default(company_settings.company_name) }}
+            </span>
+          {% else %}
+            <span class="topbar-company-name">{{ company_settings.company_name }}</span>
+            <span class="topbar-verified-tag">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              Official Profile
+            </span>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="topbar-actions">
+        <button id="btn-topbar-share" class="topbar-share-btn" type="button" title="Share this digital profile">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="18" cy="5" r="3"></circle>
+            <circle cx="6" cy="12" r="3"></circle>
+            <circle cx="18" cy="19" r="3"></circle>
+            <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+            <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+          </svg>
+          <span>Share Profile</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  {% if is_unavailable %}
+    <!-- Profile Deactivated / Unavailable State -->
+    <main class="unavailable-fullscreen-card">
+      <div class="unavailable-icon-glow">🔒</div>
+      <h1 class="unavailable-title">Profile Currently Inactive</h1>
+      <p class="unavailable-desc">
+        The digital identity card you are trying to view has been temporarily deactivated or is undergoing administrative review.
+      </p>
+      <div class="unavailable-actions">
+        <a href="mailto:{{ company_settings.company_email }}" class="btn btn-primary" style="padding: 12px 24px;">
+          Contact Support ({{ company_settings.company_email }})
+        </a>
+      </div>
+    </main>
+
+  {% else %}
+
+    <!-- 2-Column Full-Page Executive Grid -->
+    <main class="executive-profile-grid">
+
+      <!-- Left Column: VIP Hero Profile Card (Sticky on desktop) -->
+      <aside class="hero-profile-sidebar animate-fade-in-up">
+        <div class="hero-identity-card">
+
+          <!-- Card Header Glow Status -->
+          <div class="card-status-bar">
+            <span class="live-status-pill">
+              <span class="status-pulse-dot"></span>
+              Active Profile
+            </span>
+            <span class="verified-shield" title="Verified by {{ company_settings.company_name }}">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="#38bdf8">
+                <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+              </svg>
+              Verified
+            </span>
+          </div>
+
+          <!-- Hero Avatar with Radiant Border -->
+          <div class="hero-avatar-container">
+            <div class="hero-avatar-glow"></div>
+            {% if employee.profile_image %}
+              <img src="/{{ employee.profile_image }}" alt="{{ employee.first_name }} {{ employee.last_name }}" class="hero-avatar-img">
+            {% else %}
+              <div class="hero-avatar-fallback">
+                {{ employee.first_name[0] }}{{ employee.last_name[0] if employee.last_name else '' }}
+              </div>
+            {% endif %}
+            <div class="avatar-check-badge" title="Official Representative">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Name & Role Identity -->
+          <h1 class="hero-name">{{ employee.first_name }} {{ employee.last_name }}</h1>
+          {% if employee.designation %}
+            <div class="hero-designation-chip">{{ employee.designation }}</div>
+          {% endif %}
+          
+          <div class="hero-company-affiliation">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>
+            <span>{{ company_settings.company_name }}</span>
+          </div>
+
+          <!-- Biography / Greeting -->
+          {% if employee.bio %}
+            <p class="hero-bio-text">{{ employee.bio }}</p>
+          {% else %}
+            <p class="hero-bio-text">Welcome to my official digital profile. Feel free to connect directly, leave a review, or save my contact details.</p>
+          {% endif %}
+
+          <!-- Primary Contact Suite (Save Contact vCard + Quick Actions) -->
+          <div class="contact-action-suite">
+            <!-- 1. Primary vCard Button -->
+            <a href="{{ url_for('employee.download_vcard', slug=employee.slug) }}" class="btn-save-contact" id="btn-save-vcard">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                <polyline points="7 3 7 8 15 8"></polyline>
+              </svg>
+              <span>Save Contact to Phone</span>
+            </a>
+
+            <!-- 2. Quick Mini Actions (Call, Email, Share) -->
+            <div class="quick-mini-actions-grid">
+              {% if employee.phone %}
+              <a href="tel:{{ employee.phone }}" class="mini-action-pill" data-track-event="phone_click" title="Call {{ employee.phone }}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                </svg>
+                <span>Call Direct</span>
+              </a>
+              {% endif %}
+
+              {% if employee.email %}
+              <a href="mailto:{{ employee.email }}" class="mini-action-pill" data-track-event="email_click" title="Email {{ employee.email }}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                  <polyline points="22,6 12,13 2,6"></polyline>
+                </svg>
+                <span>Send Email</span>
+              </a>
+              {% endif %}
+
+              <button id="btn-share-profile-card" class="mini-action-pill" type="button" title="Copy & Share Link">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="18" cy="5" r="3"></circle>
+                  <circle cx="6" cy="12" r="3"></circle>
+                  <circle cx="18" cy="19" r="3"></circle>
+                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>
+                <span>Share Link</span>
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- Right Column: Interactive Action, Social & QR Hub -->
+      <section class="action-hub-column animate-fade-in-up stagger-1">
+
+        <!-- Top High-Impact CTAs Wrapper (Google Review & WhatsApp) -->
+        <div class="hero-ctas-wrapper">
+          <!-- 1. High-Impact Hero CTA: Google Review Card with AI Assistant -->
+          {% if employee.google_review_url %}
+          <div class="hub-hero-card review-hero-card btn-open-ai-modal" id="hero-google-review-card" data-open-ai-review="true" role="button" tabindex="0">
+            <div class="hero-card-left">
+              <div class="hero-icon-wrapper icon-google-wrapper">
+                <svg width="28" height="28" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+              </div>
+              <div class="hero-card-content">
+                <div class="hero-card-badge-row">
+                  <span class="hero-card-tag google-tag">Google Rating</span>
+                  <span class="gold-star-rating">★ ★ ★ ★ ★</span>
+                  <span class="ai-powered-pill">⚡ Gemini AI</span>
+                </div>
+                <h2 class="hero-card-title">Leave a 5-Star Google Review</h2>
+                <p class="hero-card-desc">Click below to generate authentic review suggestions in 1-click or write directly.</p>
+              </div>
+            </div>
+
+            <div class="hero-card-action-group">
+              <button type="button" id="btn-open-ai-review" class="btn-hero-action google-action-btn" title="Leave a 5-Star Google Review">
+                <span>Rate on Google</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+              </button>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- 3. Official Social & Digital Ecosystem Section -->
+        <div class="hub-section-block">
+          <div class="hub-section-header">
+            <div>
+              <h3 class="hub-section-title">Official Social & Digital Network</h3>
+              <p class="hub-section-subtitle">Verified profiles and direct channels</p>
+            </div>
+            <div class="hub-section-pill">Official Links</div>
+          </div>
+
+          <div class="social-cards-grid">
+
+            <!-- WhatsApp Tile -->
+            {% if whatsapp_url %}
+            <a href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer" class="social-channel-card card-whatsapp" data-track-event="whatsapp_click" title="Chat on WhatsApp Direct">
+              <div class="channel-card-top">
+                <div class="channel-icon-badge badge-whatsapp">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="#ffffff">
+                    <path d="M17.472 14.382c-.301-.15-1.78-.879-2.056-.98-.276-.1-.476-.15-.677.15-.2.301-.777.98-.952 1.181-.176.2-.351.226-.652.075-.301-.15-1.272-.469-2.423-1.496-.895-.798-1.5-1.784-1.675-2.085-.176-.301-.019-.464.132-.614.136-.135.301-.351.452-.527.15-.176.2-.301.301-.501.101-.2.05-.376-.025-.526-.075-.15-.677-1.632-.928-2.238-.244-.59-.493-.51-.677-.52l-.577-.01c-.2 0-.526.075-.802.376-.276.301-1.053 1.028-1.053 2.508 0 1.48 1.078 2.91 1.229 3.111.15.2 2.122 3.24 5.14 4.544.718.31 1.279.496 1.716.635.722.23 1.38.197 1.9.12.579-.087 1.78-.728 2.03-1.43.251-.702.251-1.304.176-1.43-.075-.126-.276-.201-.577-.351zM12.042 21.93h-.008c-1.77 0-3.506-.476-5.025-1.376l-.36-.214-3.738.98 1-3.642-.234-.373c-.987-1.572-1.509-3.39-1.509-5.26 0-5.508 4.482-9.99 9.993-9.99 2.668 0 5.176 1.04 7.062 2.928 1.886 1.888 2.924 4.397 2.923 7.067 0 5.509-4.482 9.99-9.989 9.99zm8.53-18.498C18.28 1.135 15.276 0 12.042 0 5.402 0 .005 5.397.005 12.037c0 2.12.553 4.19 1.606 6.014L0 24l6.115-1.604c1.761.96 3.754 1.467 5.922 1.467h.005c6.638 0 12.037-5.398 12.037-12.038 0-3.216-1.252-6.24-3.507-8.494z"/>
+                  </svg>
+                </div>
+                <div class="channel-arrow">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>
+                </div>
+              </div>
+              <div class="channel-info">
+                <span class="channel-platform-name">WhatsApp</span>
+                <span class="channel-url-preview">Chat 1-on-1</span>
+              </div>
+            </a>
+            {% endif %}
+
+            <!-- Instagram Card -->
+            {% if employee.instagram_url %}
+            <a href="{{ employee.instagram_url }}" target="_blank" rel="noopener noreferrer" class="social-channel-card card-instagram" data-track-event="instagram_click">
+              <div class="channel-card-top">
+                <div class="channel-icon-badge badge-instagram">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="#ffffff">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                  </svg>
+                </div>
+                <div class="channel-arrow">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>
+                </div>
+              </div>
+              <div class="channel-info">
+                <span class="channel-platform-name">Instagram</span>
+                <span class="channel-url-preview">Follow on Instagram</span>
+              </div>
+            </a>
+            {% endif %}
+
+            <!-- LinkedIn Card -->
+            {% if employee.linkedin_url %}
+            <a href="{{ employee.linkedin_url }}" target="_blank" rel="noopener noreferrer" class="social-channel-card card-linkedin" data-track-event="linkedin_click">
+              <div class="channel-card-top">
+                <div class="channel-icon-badge badge-linkedin">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
+                    <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                  </svg>
+                </div>
+                <div class="channel-arrow">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>
+                </div>
+              </div>
+              <div class="channel-info">
+                <span class="channel-platform-name">LinkedIn</span>
+                <span class="channel-url-preview">Connect professionally</span>
+              </div>
+            </a>
+            {% endif %}
+
+            <!-- Facebook Card -->
+            {% if employee.facebook_url %}
+            <a href="{{ employee.facebook_url }}" target="_blank" rel="noopener noreferrer" class="social-channel-card card-facebook" data-track-event="facebook_click">
+              <div class="channel-card-top">
+                <div class="channel-icon-badge badge-facebook">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="#ffffff">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                </div>
+                <div class="channel-arrow">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>
+                </div>
+              </div>
+              <div class="channel-info">
+                <span class="channel-platform-name">Facebook</span>
+                <span class="channel-url-preview">Follow updates</span>
+              </div>
+            </a>
+            {% endif %}
+
+            <!-- YouTube Card -->
+            {% if employee.youtube_url %}
+            <a href="{{ employee.youtube_url }}" target="_blank" rel="noopener noreferrer" class="social-channel-card card-youtube" data-track-event="youtube_click">
+              <div class="channel-card-top">
+                <div class="channel-icon-badge badge-youtube">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="#ffffff">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                </div>
+                <div class="channel-arrow">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>
+                </div>
+              </div>
+              <div class="channel-info">
+                <span class="channel-platform-name">YouTube Channel</span>
+                <span class="channel-url-preview">Watch videos</span>
+              </div>
+            </a>
+            {% endif %}
+
+            <!-- Company / Portfolio Website Card -->
+            {% if employee.website_url %}
+            <a href="{{ employee.website_url }}" target="_blank" rel="noopener noreferrer" class="social-channel-card card-website" data-track-event="website_click">
+              <div class="channel-card-top">
+                <div class="channel-icon-badge badge-website">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                  </svg>
+                </div>
+                <div class="channel-arrow">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>
+                </div>
+              </div>
+              <div class="channel-info">
+                <span class="channel-platform-name">Official Website</span>
+                <span class="channel-url-preview">Explore company & portfolio</span>
+              </div>
+            </a>
+            {% endif %}
+
+            <!-- Dynamic Custom Channel & Social Links -->
+            {% if employee.custom_links %}
+              {% for cl in employee.custom_links %}
+              <a href="{{ cl.url }}" target="_blank" rel="noopener noreferrer" class="social-channel-card card-custom-{{ cl.platform }}" data-track-event="custom_link_click" data-track-platform="{{ cl.platform }}">
+                <div class="channel-card-top">
+                  <div class="channel-icon-badge {{ cl.badge_class }}" style="background: {{ cl.brand_color }};">
+                    {{ cl.svg_icon | safe }}
+                  </div>
+                  <div class="channel-arrow">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M7 17L17 7M17 7H7M17 7V17"/></svg>
+                  </div>
+                </div>
+                <div class="channel-info">
+                  <span class="channel-platform-name">{{ cl.title }}</span>
+                  <span class="channel-url-preview">Visit verified channel</span>
+                </div>
+              </a>
+              {% endfor %}
+            {% endif %}
+
+          </div>
+        </div>
+
+        <!-- 4. Scan & Connect QR Showcase Station -->
+        {% if employee.png_path %}
+        <div class="qr-showcase-station">
+          <div class="qr-station-flex">
+            <div class="qr-image-frame">
+              <img src="/{{ employee.png_path }}" alt="{{ employee.first_name }} Official QR" class="qr-station-img">
+              <div class="qr-badge-overlay">Live Scan</div>
+            </div>
+
+            <div class="qr-station-details">
+              <div class="qr-station-badge">Print & Share Ready</div>
+              <h3 class="qr-station-title">Scan & Share Digital Profile</h3>
+              <p class="qr-station-desc">
+                Point any smartphone camera to scan this code for instant contactless access to {{ employee.first_name }}'s verified profile, review links, and WhatsApp.
+              </p>
+
+              <div class="qr-station-actions">
+                <a href="/{{ employee.png_path }}" download="{{ employee.slug }}-qr.png" class="btn-qr-download">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="7 10 12 15 17 10"></polyline>
+                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                  </svg>
+                  <span>Download QR Image</span>
+                </a>
+
+                <button type="button" id="btn-copy-link-qr" class="btn-qr-copy">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  <span>Copy Profile Link</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+      </section>
+
+    </main>
+
+    <!-- Global Full-Page Footer -->
+    <footer class="public-fullpage-footer">
+      <div class="footer-container">
+        <div class="footer-brand">
+          <span>Official Corporate Profile of <strong>{{ company_settings.company_name }}</strong></span>
+        </div>
+        <div class="footer-meta">
+          <span>Enterprise Digital Profile System • Powered by Apex</span>
+        </div>
+      </div>
+    </footer>
+
+    <!-- ==========================================================================
+         AI Google Review Assistant Modal
+         ========================================================================== -->
+    <div id="ai-review-modal" class="ai-modal-overlay" style="display: none;">
+      <div class="ai-modal-backdrop"></div>
+      
+      <div class="ai-modal-container">
+        <!-- Mobile Bottom-Sheet Pull Drag Handle -->
+        <div class="sheet-drag-handle" id="sheet-drag-handle" aria-hidden="true">
+          <span class="sheet-drag-bar"></span>
+        </div>
+
+        <!-- Modal Topbar -->
+        <div class="ai-modal-header">
+          <div class="ai-modal-title-group">
+            <div class="ai-modal-badge-row">
+              <span class="ai-google-badge">
+                <svg width="14" height="14" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                Google Review
+              </span>
+              <span class="ai-sparkle-badge">✨ Gemini AI Assistant</span>
+            </div>
+            <h2 class="ai-modal-heading">AI Review Assistant for {{ employee.first_name }}</h2>
+            <p class="ai-modal-subheading">Choose an AI-generated suggestion matching your experience, customize if you wish, and post directly to Google!</p>
+          </div>
+
+          <button type="button" id="btn-close-ai-modal" class="ai-modal-close-btn" aria-label="Close Assistant">
+            &times;
+          </button>
+        </div>
+
+        <!-- 2-Step Visual Flow Guidance Bar -->
+        <div class="ai-flow-guide-bar">
+          <div class="flow-step-item">
+            <span class="flow-step-num">1</span>
+            <span class="flow-step-text">Choose stars & category</span>
+          </div>
+          <span class="flow-step-arrow">→</span>
+          <div class="flow-step-item">
+            <span class="flow-step-num">2</span>
+            <span class="flow-step-text">Copy & paste on Google</span>
+          </div>
+        </div>
+
+        <!-- 1. Interactive Star Rating Selector (1 to 5 Stars) -->
+        <div class="ai-star-rating-section">
+          <div class="ai-star-rating-header">
+            <label class="ai-section-label" style="margin-bottom: 0;">Select Your Rating:</label>
+            <span id="ai-star-rating-label" class="ai-star-score-badge">⭐⭐⭐⭐⭐ 5.0 • Outstanding</span>
+          </div>
+          <div class="ai-interactive-stars-row" id="ai-stars-picker" role="radiogroup" aria-label="Star Rating Selection">
+            <button type="button" class="star-pick-btn active" data-star="1" title="1 Star - Critical">★</button>
+            <button type="button" class="star-pick-btn active" data-star="2" title="2 Stars - Needs Improvement">★</button>
+            <button type="button" class="star-pick-btn active" data-star="3" title="3 Stars - Satisfactory">★</button>
+            <button type="button" class="star-pick-btn active" data-star="4" title="4 Stars - Very Good">★</button>
+            <button type="button" class="star-pick-btn active" data-star="5" title="5 Stars - Outstanding">★</button>
+          </div>
+        </div>
+
+        <!-- 2. Business Category / Service Filter Chips -->
+        {% if review_categories %}
+        <div class="ai-categories-section">
+          <div class="ai-categories-header">
+            <label class="ai-section-label" style="margin-bottom: 0;">Select Service / Department:</label>
+            <span class="ai-section-hint">Tap to focus suggestions</span>
+          </div>
+          <div class="ai-category-chips-grid" id="ai-category-chips-wrapper">
+            {% for cat in review_categories %}
+            <button type="button" class="ai-category-chip" data-category="{{ cat }}">
+              <span class="chip-check-icon">✓</span>
+              <span>{{ cat }}</span>
+            </button>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- 3. Tone Filter Chips -->
+        <div class="ai-tone-section">
+          <label class="ai-section-label">Select Review Vibe / Tone:</label>
+          <div class="ai-tone-chips-grid">
+            <button type="button" class="ai-tone-chip active" data-tone="friendly">🤝 Friendly & Caring</button>
+            <button type="button" class="ai-tone-chip" data-tone="detailed">💼 Professional & Detailed</button>
+            <button type="button" class="ai-tone-chip" data-tone="quick">⚡ Quick & Punchy</button>
+            <button type="button" class="ai-tone-chip" data-tone="recommended">⭐ Highly Recommended</button>
+            <button type="button" class="ai-tone-chip" data-tone="supportive">🕒 Prompt Service</button>
+          </div>
+        </div>
+
+        <!-- Custom Focus Topic Input -->
+        <div class="ai-topic-bar">
+          <div class="ai-topic-input-wrapper">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+            <input type="text" id="ai-custom-topic-input" class="ai-topic-input" placeholder="Optional: Mention specific service (e.g. cardiac checkup, hiring, prompt support)...">
+          </div>
+          <button type="button" id="btn-regenerate-ai" class="btn-ai-regenerate">
+            <span>⚡ Generate</span>
+          </button>
+        </div>
+
+        <!-- Dynamic Review Suggestions Container -->
+        <div class="ai-suggestions-wrapper">
+          <label class="ai-section-label">Click any card to select & customize:</label>
+
+          <!-- Loading Skeleton -->
+          <div id="ai-reviews-loading" class="ai-loading-skeleton" style="display: none;">
+            <div class="skeleton-card"><div class="skeleton-line shimmer"></div><div class="skeleton-line short shimmer"></div></div>
+            <div class="skeleton-card"><div class="skeleton-line shimmer"></div><div class="skeleton-line short shimmer"></div></div>
+            <div class="skeleton-card"><div class="skeleton-line shimmer"></div><div class="skeleton-line short shimmer"></div></div>
+          </div>
+
+          <!-- Cards List -->
+          <div id="ai-reviews-list" class="ai-reviews-list">
+            <!-- Populated via JavaScript -->
+          </div>
+        </div>
+
+        <!-- Selected Review Textarea & Customizer -->
+        <div class="ai-editor-section">
+          <div class="ai-editor-header">
+            <label for="ai-selected-review-text" class="ai-section-label">Review Preview (Edit before posting if desired):</label>
+            <span class="ai-char-counter"><span id="ai-char-count">0</span> characters</span>
+          </div>
+          <textarea id="ai-selected-review-text" class="ai-review-textarea" rows="3" placeholder="Select a suggestion above or type your customized review here..."></textarea>
+        </div>
+
+        <!-- Action Footer -->
+        <div class="ai-modal-footer">
+          <div class="ai-footer-left">
+            <a href="{{ employee.google_review_url }}" target="_blank" rel="noopener noreferrer" class="ai-direct-link">
+              Skip AI & open Google Reviews directly →
+            </a>
+          </div>
+
+          <div class="ai-footer-right">
+            <button type="button" id="btn-copy-and-post-gmb" class="btn-post-google">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>🚀 Copy & Post on Google</span>
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ==========================================================================
+         Visitor Lead Capture Popup Modal
+         ========================================================================== -->
+    <div id="visitor-lead-modal" class="lead-modal-overlay" style="display: none;">
+      <div class="lead-modal-backdrop"></div>
+
+      <div class="lead-modal-container">
+        <!-- Mobile Bottom-Sheet Pull Drag Handle -->
+        <div class="sheet-drag-handle" id="lead-sheet-drag-handle" aria-hidden="true">
+          <span class="sheet-drag-bar"></span>
+        </div>
+
+        <!-- Modal Header -->
+        <div class="lead-modal-header">
+          <div class="lead-header-info">
+            <div class="lead-badge-row">
+              <span class="lead-pill-badge">👋 Welcome Visitor</span>
+              <span class="lead-verified-badge">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+                Verified Card
+              </span>
+            </div>
+            <h2 class="lead-modal-title">Connect with {{ employee.first_name }} {{ employee.last_name }}</h2>
+            <p class="lead-modal-subtitle">Share your details to establish a direct connection and exchange contact information.</p>
+          </div>
+
+          <!-- Prominent Cancel / Cross (❌) Button -->
+          <button type="button" id="btn-close-lead-modal" class="lead-modal-close-btn" aria-label="Cancel and Close Form" title="Cancel / Close (Skip)">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Lead Form -->
+        <form id="visitor-lead-form" class="lead-capture-form" autocomplete="on">
+          <input type="hidden" name="employee_id" value="{{ employee.id }}">
+          
+          <div class="lead-form-sections">
+            
+            <!-- Mandatory Details Group -->
+            <div class="lead-section-group">
+              <div class="lead-section-title-row">
+                <span class="lead-section-label">Required Information</span>
+                <span class="lead-tag-required">* Mandatory</span>
+              </div>
+
+              <div class="lead-input-field">
+                <label for="lead-name" class="field-label">Full Name <span class="req-star">*</span></label>
+                <div class="input-icon-wrap">
+                  <svg class="field-icon icon-name" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  <input type="text" id="lead-name" name="name" class="lead-input" placeholder="Enter your full name" required>
+                </div>
+              </div>
+
+              <div class="lead-grid-2col">
+                <div class="lead-input-field">
+                  <label for="lead-phone" class="field-label">Mobile Number <span class="req-star">*</span></label>
+                  <div class="input-icon-wrap">
+                    <svg class="field-icon icon-phone" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    <input type="tel" id="lead-phone" name="phone" class="lead-input" placeholder="e.g. 9876543210" required>
+                  </div>
+                </div>
+
+                <div class="lead-input-field">
+                  <label for="lead-email" class="field-label">Email Address <span class="req-star">*</span></label>
+                  <div class="input-icon-wrap">
+                    <svg class="field-icon icon-email" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    <input type="email" id="lead-email" name="email" class="lead-input" placeholder="e.g. name@example.com" required>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Optional Additional Details Group -->
+            <div class="lead-section-group optional-group">
+              <div class="lead-section-title-row">
+                <span class="lead-section-label">Additional Details</span>
+                <span class="lead-tag-optional">Optional</span>
+              </div>
+
+              <div class="lead-grid-3col">
+                <div class="lead-input-field">
+                  <label for="lead-dob" class="field-label">Date of Birth</label>
+                  <div class="input-icon-wrap">
+                    <svg class="field-icon icon-dob" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <input type="date" id="lead-dob" name="dob" class="lead-input">
+                  </div>
+                </div>
+
+                <div class="lead-input-field">
+                  <label for="lead-anniversary" class="field-label">Anniversary Date</label>
+                  <div class="input-icon-wrap">
+                    <svg class="field-icon icon-anniversary" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <input type="date" id="lead-anniversary" name="anniversary" class="lead-input">
+                  </div>
+                </div>
+
+                <div class="lead-input-field">
+                  <label for="lead-city" class="field-label">City / Location</label>
+                  <div class="input-icon-wrap">
+                    <svg class="field-icon icon-city" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    <input type="text" id="lead-city" name="city" class="lead-input" placeholder="e.g. Mumbai, Surat">
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Alert / Error display box -->
+          <div id="lead-form-error" class="lead-form-alert" style="display: none;"></div>
+
+          <!-- Modal Action Buttons Footer -->
+          <div class="lead-modal-actions-footer">
+            <button type="submit" id="btn-submit-lead-form" class="btn-lead-submit">
+              <span class="btn-submit-text">Submit Details</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+          </div>
+        </form>
+
+      </div>
+    </div>
+
+    <!-- Floating Re-open Lead Button (In case visitor cancels and wants to connect later) -->
+    <button type="button" id="btn-floating-lead-trigger" class="floating-lead-btn" title="Connect with {{ employee.first_name }}">
+      <span class="floating-pulse-dot"></span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+      <span>Connect</span>
+    </button>
+
+  {% endif %}
+</div>
+
+<!-- Toast Feedback Container for Link Copying -->
+<div id="public-toast-notification" class="public-toast">
+  <div class="toast-content">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+    <span id="public-toast-msg">Profile link copied to clipboard!</span>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/public.js') }}"></script>
+{% endblock %}

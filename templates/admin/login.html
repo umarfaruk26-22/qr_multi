@@ -1,0 +1,597 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Portal Authentication | {{ company_settings.company_name }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}">
+<style>
+  /* ==========================================================================
+     Ultra-Luxury Executive Admin Portal Login
+     ========================================================================== */
+  body.admin-login-body {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 16px;
+    background-color: #060913;
+    background-image: 
+      radial-gradient(at 15% 15%, rgba(99, 102, 241, 0.22) 0px, transparent 48%),
+      radial-gradient(at 85% 20%, rgba(6, 182, 212, 0.18) 0px, transparent 48%),
+      radial-gradient(at 50% 85%, rgba(168, 85, 247, 0.16) 0px, transparent 52%),
+      linear-gradient(180deg, #060913 0%, #0b1120 100%);
+    background-attachment: fixed;
+    color: #f8fafc;
+    font-family: var(--font-body, 'Plus Jakarta Sans', sans-serif);
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  /* Ambient Glow Spheres */
+  .login-ambient-orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.55;
+    animation: orbFloat 8s ease-in-out infinite alternate;
+  }
+
+  .orb-1 {
+    width: 320px;
+    height: 320px;
+    background: #6366f1;
+    top: 10%;
+    left: 15%;
+  }
+
+  .orb-2 {
+    width: 380px;
+    height: 380px;
+    background: #06b6d4;
+    bottom: 10%;
+    right: 15%;
+    animation-duration: 11s;
+  }
+
+  @keyframes orbFloat {
+    0% { transform: translate(0, 0) scale(1); }
+    100% { transform: translate(30px, -25px) scale(1.1); }
+  }
+
+  /* Main Executive Login Box */
+  .admin-login-wrapper {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 460px;
+    margin: 0 auto;
+    animation: loginModalEntrance 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  @keyframes loginModalEntrance {
+    from {
+      opacity: 0;
+      transform: translateY(24px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .admin-login-card {
+    background: rgba(15, 23, 42, 0.82);
+    backdrop-filter: blur(28px);
+    -webkit-backdrop-filter: blur(28px);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 26px;
+    padding: 38px 34px;
+    box-shadow: 
+      0 25px 60px rgba(0, 0, 0, 0.65),
+      0 0 0 1px rgba(99, 102, 241, 0.18),
+      0 0 35px rgba(99, 102, 241, 0.12);
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* Shimmer Top Accent Border */
+  .admin-login-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #6366f1, #06b6d4, #a855f7, #6366f1);
+    background-size: 300% 100%;
+    animation: shimmerBorder 5s linear infinite;
+  }
+
+  @keyframes shimmerBorder {
+    0% { background-position: 0% 50%; }
+    100% { background-position: 300% 50%; }
+  }
+
+  /* Header Section */
+  .admin-login-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    margin-bottom: 26px;
+  }
+
+  .admin-shield-icon-wrap {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.25), rgba(6, 182, 212, 0.25));
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 18px;
+    box-shadow: 0 10px 25px rgba(99, 102, 241, 0.35);
+  }
+
+  .admin-shield-icon-wrap svg {
+    width: 32px;
+    height: 32px;
+  }
+
+  .shield-pulse-dot {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #10b981;
+    border: 2px solid #0f172a;
+    box-shadow: 0 0 10px #10b981;
+    animation: shieldPulse 2s infinite;
+  }
+
+  @keyframes shieldPulse {
+    0% { transform: scale(0.95); opacity: 1; }
+    50% { transform: scale(1.25); opacity: 0.6; }
+    100% { transform: scale(0.95); opacity: 1; }
+  }
+
+  .admin-login-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 12px;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.35);
+    border-radius: 9999px;
+    color: #a5b4fc;
+    font-size: 0.74rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+  }
+
+  .admin-login-title {
+    font-family: var(--font-heading, 'Outfit', sans-serif);
+    font-size: 1.55rem;
+    font-weight: 800;
+    color: #ffffff;
+    letter-spacing: -0.02em;
+    line-height: 1.25;
+    margin-bottom: 6px;
+  }
+
+  .admin-login-desc {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    line-height: 1.45;
+  }
+
+  /* 1-Click Quick Demo Credentials Pill */
+  .quick-demo-pill {
+    width: 100%;
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px dashed rgba(129, 140, 248, 0.4);
+    border-radius: 14px;
+    padding: 10px 14px;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    cursor: pointer;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    text-align: left;
+  }
+
+  .quick-demo-pill:hover {
+    background: rgba(99, 102, 241, 0.16);
+    border-color: #818cf8;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
+  }
+
+  .quick-demo-pill:active {
+    transform: scale(0.98);
+  }
+
+  .demo-pill-text {
+    font-size: 0.78rem;
+    color: #cbd5e1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .demo-pill-text strong {
+    color: #fff;
+    font-weight: 700;
+  }
+
+  .demo-pill-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    background: #4f46e5;
+    color: #fff;
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    white-space: nowrap;
+    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
+  }
+
+  /* Form Elements */
+  .admin-form-group {
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .admin-form-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 0.84rem;
+    font-weight: 700;
+    color: #e2e8f0;
+  }
+
+  .input-icon-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 100%;
+  }
+
+  .input-lead-icon {
+    position: absolute;
+    left: 14px;
+    color: #64748b;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+  }
+
+  .admin-text-input {
+    width: 100%;
+    padding: 13px 14px 13px 44px;
+    background: rgba(15, 23, 42, 0.9);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 0.92rem;
+    outline: none;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .admin-text-input:focus {
+    border-color: #6366f1;
+    background: #090d16;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.22), 0 4px 16px rgba(0, 0, 0, 0.4);
+  }
+
+  .input-icon-wrapper:focus-within .input-lead-icon {
+    color: #6366f1;
+  }
+
+  .password-toggle-btn {
+    position: absolute;
+    right: 12px;
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    padding: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .password-toggle-btn:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+  }
+
+  /* Sign In Button */
+  .btn-admin-signin {
+    width: 100%;
+    padding: 14px 20px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #06b6d4 100%);
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+    font-family: var(--font-heading, inherit);
+    font-weight: 700;
+    font-size: 0.96rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    box-shadow: 0 8px 24px rgba(79, 70, 229, 0.45);
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    margin-top: 8px;
+  }
+
+  .btn-admin-signin:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 30px rgba(79, 70, 229, 0.6);
+    filter: brightness(1.08);
+  }
+
+  .btn-admin-signin:active {
+    transform: scale(0.97);
+  }
+
+  .btn-admin-signin svg {
+    transition: transform 0.2s ease;
+  }
+
+  .btn-admin-signin:hover svg {
+    transform: translateX(3px);
+  }
+
+  /* Footer Security Info */
+  .admin-login-footer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: center;
+  }
+
+  .security-badge-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.74rem;
+    color: #64748b;
+    font-weight: 600;
+  }
+
+  .security-badge-row svg {
+    color: #10b981;
+  }
+
+  .back-to-public-link {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color 0.2s ease;
+  }
+
+  .back-to-public-link:hover {
+    color: #38bdf8;
+    text-decoration: underline;
+  }
+
+  @media (max-width: 480px) {
+    .admin-login-card {
+      padding: 28px 20px;
+      border-radius: 22px;
+    }
+    .admin-login-title {
+      font-size: 1.35rem;
+    }
+    .admin-shield-icon-wrap {
+      width: 54px;
+      height: 54px;
+      border-radius: 16px;
+      margin-bottom: 14px;
+    }
+    .admin-shield-icon-wrap svg {
+      width: 26px;
+      height: 26px;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block body_class %}admin-login-body{% endblock %}
+
+{% block content %}
+<!-- Ambient Glow Orbs -->
+<div class="login-ambient-orb orb-1"></div>
+<div class="login-ambient-orb orb-2"></div>
+
+<div class="admin-login-wrapper">
+  <div class="admin-login-card">
+
+    <!-- Header & Shield Icon -->
+    <div class="admin-login-header">
+      <div class="admin-shield-icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" fill="rgba(99, 102, 241, 0.2)" stroke="#818cf8"/>
+          <path d="M9 12l2 2 4-4" stroke="#38bdf8" stroke-width="2.5"/>
+        </svg>
+        <span class="shield-pulse-dot" title="Security Active"></span>
+      </div>
+
+      <span class="admin-login-badge">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+        Enterprise Portal
+      </span>
+      <h1 class="admin-login-title">{{ company_settings.company_name }} Admin</h1>
+      <p class="admin-login-desc">Sign in with administrative credentials to manage digital identities, reviews & QR analytics.</p>
+    </div>
+
+    <!-- 1-Click Quick Demo Auto-Fill Pill -->
+    <div class="quick-demo-pill" id="btn-autofill-credentials" title="Click to auto-fill default admin credentials">
+      <div class="demo-pill-text">
+        <span style="font-size: 0.70rem; text-transform: uppercase; letter-spacing: 0.05em; color: #818cf8; font-weight: 700;">Quick Demo Login</span>
+        <span>Username: <strong>admin</strong> • Password: <strong>Admin@12345</strong></span>
+      </div>
+      <span class="demo-pill-badge">⚡ Auto-Fill</span>
+    </div>
+
+    <!-- Login Form -->
+    <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}" id="admin-login-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <!-- Username -->
+      <div class="admin-form-group">
+        <label class="admin-form-label" for="username">
+          <span>Admin Username</span>
+        </label>
+        <div class="input-icon-wrapper">
+          <span class="input-lead-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </span>
+          <input type="text" id="username" name="username" class="admin-text-input" placeholder="Enter admin username" required autofocus autocomplete="username">
+        </div>
+      </div>
+
+      <!-- Password -->
+      <div class="admin-form-group">
+        <label class="admin-form-label" for="password">
+          <span>Security Password</span>
+        </label>
+        <div class="input-icon-wrapper">
+          <span class="input-lead-icon">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </span>
+          <input type="password" id="password" name="password" class="admin-text-input" placeholder="Enter password" required autocomplete="current-password">
+          <button type="button" id="btn-toggle-password" class="password-toggle-btn" aria-label="Toggle password visibility">
+            <svg id="icon-eye-open" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+              <circle cx="12" cy="12" r="3"></circle>
+            </svg>
+            <svg id="icon-eye-closed" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;">
+              <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+              <line x1="1" y1="1" x2="23" y2="23"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Submit Action -->
+      <button type="submit" class="btn-admin-signin" id="btn-submit-signin">
+        <span>Sign In to Executive Dashboard</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
+        </svg>
+      </button>
+    </form>
+
+    <!-- Footer Security Meta -->
+    <div class="admin-login-footer">
+      <div class="security-badge-row">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm-2 16l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z"/>
+        </svg>
+        <span>256-Bit Encrypted Session • CSRF Protected</span>
+      </div>
+      <a href="/" class="back-to-public-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+        <span>Return to Public Homepage</span>
+      </a>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const usernameInput = document.getElementById('username');
+  const passwordInput = document.getElementById('password');
+  const btnAutofill = document.getElementById('btn-autofill-credentials');
+  const btnTogglePassword = document.getElementById('btn-toggle-password');
+  const iconEyeOpen = document.getElementById('icon-eye-open');
+  const iconEyeClosed = document.getElementById('icon-eye-closed');
+  const loginForm = document.getElementById('admin-login-form');
+  const submitBtn = document.getElementById('btn-submit-signin');
+
+  // 1-Click Auto Fill Demo Credentials
+  if (btnAutofill && usernameInput && passwordInput) {
+    btnAutofill.addEventListener('click', () => {
+      usernameInput.value = 'admin';
+      passwordInput.value = 'Admin@12345';
+      usernameInput.focus();
+
+      // Brief animation feedback
+      btnAutofill.style.borderColor = '#10b981';
+      btnAutofill.style.background = 'rgba(16, 185, 129, 0.15)';
+      setTimeout(() => {
+        btnAutofill.style.borderColor = '';
+        btnAutofill.style.background = '';
+      }, 1000);
+    });
+  }
+
+  // Toggle Password Visibility
+  if (btnTogglePassword && passwordInput && iconEyeOpen && iconEyeClosed) {
+    btnTogglePassword.addEventListener('click', () => {
+      const isPassword = passwordInput.type === 'password';
+      passwordInput.type = isPassword ? 'text' : 'password';
+      iconEyeOpen.style.display = isPassword ? 'none' : 'block';
+      iconEyeClosed.style.display = isPassword ? 'block' : 'none';
+      passwordInput.focus();
+    });
+  }
+
+  // Loading state on submit
+  if (loginForm && submitBtn) {
+    loginForm.addEventListener('submit', () => {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = `
+        <svg class="animate-spin" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+          <path d="M12 2a10 10 0 0 1 10 10" stroke="#fff"></path>
+        </svg>
+        <span>Authenticating...</span>
+      `;
+    });
+  }
+});
+</script>
+{% endblock %}
+

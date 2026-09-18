@@ -1,0 +1,360 @@
+{% extends "admin/base_admin.html" %}
+
+{% block title %}Edit {{ employee.first_name }} {{ employee.last_name }} | {{ company_settings.company_name }}{% endblock %}
+{% block page_title %}Edit Profile: {{ employee.first_name }} {{ employee.last_name }}{% endblock %}
+
+{% block admin_content %}
+<!-- Hero Header -->
+<div class="form-hero-header">
+  <div class="form-breadcrumb">
+    <a href="{{ url_for('admin.dashboard') }}">Dashboard</a>
+    <span>/</span>
+    <a href="{{ url_for('admin.employees_list') }}">Employees</a>
+    <span>/</span>
+    <a href="{{ url_for('admin.employee_details', id=employee.id) }}">{{ employee.first_name }} {{ employee.last_name }}</a>
+    <span>/</span>
+    <span class="breadcrumb-pill">Edit Profile</span>
+  </div>
+  <h1 class="form-hero-title">Edit Profile: {{ employee.first_name }} {{ employee.last_name }}</h1>
+  <p class="form-hero-subtitle">Update identity, social links, contact numbers, and regenerate QR assets if necessary.</p>
+</div>
+
+<form method="POST" action="{{ url_for('admin.edit_employee', id=employee.id) }}" enctype="multipart/form-data">
+  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+  <div class="form-builder-layout">
+
+    <!-- Left Column: Form Cards Stack -->
+    <div class="form-cards-stack">
+
+      <!-- 1. Identity & Role Card -->
+      <div class="form-card-box">
+        <div class="section-head">
+          <div class="section-badge-num">1</div>
+          <div>
+            <h2 class="section-head-title">Personal Identity & Dynamic URL</h2>
+            <p class="section-head-desc">Primary details that define the public identity and permanent URL route.</p>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="first_name">First Name <span class="required">*</span></label>
+            <input type="text" id="first_name" name="first_name" class="form-input" value="{{ employee.first_name }}" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="last_name">Last Name</label>
+            <input type="text" id="last_name" name="last_name" class="form-input" value="{{ employee.last_name }}">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="designation">Designation / Corporate Title</label>
+            <input type="text" id="designation" name="designation" class="form-input" value="{{ employee.designation }}">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="slug">Public URL Slug</label>
+            <div class="input-addon-group">
+              <span class="addon-prefix">/</span>
+              <input type="text" id="slug" name="slug" value="{{ employee.slug }}">
+            </div>
+          </div>
+
+          <div class="form-group full-width">
+            <div class="slug-preview-chip">
+              <span>🌐 Current Public URL:</span>
+              <strong>{{ base_url }}/<span id="live-slug-preview-text">{{ employee.slug }}</span></strong>
+            </div>
+          </div>
+
+          <div class="form-group full-width">
+            <label class="form-label" for="bio">Professional Bio & Greeting</label>
+            <textarea id="bio" name="bio" class="form-textarea">{{ employee.bio | default('') }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Direct Contact Channels Card -->
+      <div class="form-card-box">
+        <div class="section-head">
+          <div class="section-badge-num">2</div>
+          <div>
+            <h2 class="section-head-title">Direct Contact Channels</h2>
+            <p class="section-head-desc">Instant phone and WhatsApp links for fast 1-click interactions.</p>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="phone">Direct Phone Number</label>
+            <input type="tel" id="phone" name="phone" class="form-input" value="{{ employee.phone | default('') }}">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="whatsapp">WhatsApp Number (Direct Chat)</label>
+            <input type="text" id="whatsapp" name="whatsapp" class="form-input" value="{{ employee.whatsapp | default('') }}">
+          </div>
+
+          <div class="form-group full-width">
+            <label class="form-label" for="email">Official Email Address</label>
+            <input type="email" id="email" name="email" class="form-input" value="{{ employee.email | default('') }}">
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Google Review & Social CTAs Card -->
+      <div class="form-card-box">
+        <div class="section-head">
+          <div class="section-badge-num">3</div>
+          <div>
+            <h2 class="section-head-title">Google Review & Social Engagement</h2>
+            <p class="section-head-desc">Convert profile scans into 5-star Google Reviews and multi-platform followers.</p>
+          </div>
+        </div>
+
+        <!-- Highlighted Google Review Box -->
+        <div class="review-highlight-box">
+          <div class="review-box-header">
+            <div class="review-box-title">
+              <div class="social-mini-icon" style="background: #ffffff; padding: 2px;">
+                <svg width="18" height="18" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+              </div>
+              <span>Google Review Link</span>
+            </div>
+            <span class="star-rating-chip">★ ★ ★ ★ ★ High Impact</span>
+          </div>
+          <div class="form-group full-width" style="margin-bottom: 0;">
+            <input type="url" id="google_review_url" name="google_review_url" class="form-input" placeholder="https://g.page/r/your-id/review or https://search.google.com/local/writereview?placeid=..." value="{{ employee.google_review_url | default('') }}">
+            <span class="form-help" style="color: #94a3b8; margin-top: 6px; display: block; font-size: 0.78rem; line-height: 1.4;">
+              💡 <strong>Tip for Direct 5-Star Popup:</strong> Use Google's direct link format (e.g. <code>https://g.page/r/YOUR_ID/review</code> or <code>https://search.google.com/local/writereview?placeid=...</code>) so customers get the direct review dialog popup immediately upon copying their AI suggestion.
+            </span>
+          </div>
+
+          <!-- Review Categories / Business Services -->
+          <div class="form-group full-width" style="margin-top: 16px; margin-bottom: 0; padding-top: 14px; border-top: 1px dashed rgba(255, 255, 255, 0.1);">
+            <label class="form-label" for="review_categories">
+              <span>🏷️ Review Categories / Business Services (Comma-separated)</span>
+            </label>
+            <input type="text" id="review_categories" name="review_categories" class="form-input" placeholder="e.g. Menswear, Custom Tailoring, Wedding Collection, Fabric Quality, Alterations" value="{{ employee.review_categories | default('') }}">
+            <span class="form-help" style="color: #94a3b8; margin-top: 6px; display: block; font-size: 0.78rem; line-height: 1.4;">
+              🎯 <strong>Interactive Review Chips:</strong> These categories appear as clickable chips in the AI Google Review modal on the public card so customers can choose the exact service they are rating (e.g. <em>Menswear, Tailoring, Consultation</em>). Leave blank for smart auto-detected defaults.
+            </span>
+          </div>
+        </div>
+
+        <!-- Social Links Grid -->
+        <div class="social-form-grid">
+          <div class="social-input-item">
+            <label class="social-label-flex" for="instagram_url">
+              <span class="social-mini-icon" style="background: radial-gradient(circle at 30% 107%, #fdf497 0%, #fdf497 5%, #fd5949 45%, #d6249f 60%, #285AEB 90%);">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#ffffff">
+                  <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                </svg>
+              </span>
+              Instagram URL
+            </label>
+            <input type="url" id="instagram_url" name="instagram_url" class="form-input" value="{{ employee.instagram_url | default('') }}">
+          </div>
+
+          <div class="social-input-item">
+            <label class="social-label-flex" for="linkedin_url">
+              <span class="social-mini-icon" style="background: #0077b5;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="#ffffff">
+                  <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                </svg>
+              </span>
+              LinkedIn URL
+            </label>
+            <input type="url" id="linkedin_url" name="linkedin_url" class="form-input" value="{{ employee.linkedin_url | default('') }}">
+          </div>
+
+          <div class="social-input-item">
+            <label class="social-label-flex" for="facebook_url">
+              <span class="social-mini-icon" style="background: #1877f2;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="#ffffff">
+                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                </svg>
+              </span>
+              Facebook URL
+            </label>
+            <input type="url" id="facebook_url" name="facebook_url" class="form-input" value="{{ employee.facebook_url | default('') }}">
+          </div>
+
+          <div class="social-input-item">
+            <label class="social-label-flex" for="youtube_url">
+              <span class="social-mini-icon" style="background: #ff0000;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="#ffffff">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+              </span>
+              YouTube URL
+            </label>
+            <input type="url" id="youtube_url" name="youtube_url" class="form-input" value="{{ employee.youtube_url | default('') }}">
+          </div>
+
+          <div class="social-input-item" style="grid-column: 1 / -1;">
+            <label class="social-label-flex" for="website_url">
+              <span class="social-mini-icon" style="background: linear-gradient(135deg, #4f46e5, #06b6d4);">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="2" y1="12" x2="22" y2="12"></line>
+                  <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+              </span>
+              Company / Portfolio Website
+            </label>
+            <input type="url" id="website_url" name="website_url" class="form-input" value="{{ employee.website_url | default('') }}">
+          </div>
+        </div>
+
+        <!-- Dynamic Custom Channel & Social Links Builder -->
+        <div class="custom-links-builder-section">
+          <div class="custom-links-header">
+            <div>
+              <h3 class="custom-links-title">🔗 Custom Channel & Social Links</h3>
+              <p class="custom-links-desc">Add extra verified channels like Twitter/X, Telegram, Messenger, Discord, GitHub, Calendly, Portfolio, etc.</p>
+            </div>
+            <button type="button" id="btn-add-custom-link" class="btn-add-custom-link">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              <span>Add Custom Link</span>
+            </button>
+          </div>
+
+          <div id="custom-links-container" class="custom-links-stack">
+            {% if employee.custom_links %}
+              {% for cl in employee.custom_links %}
+              <div class="custom-link-row">
+                <div class="custom-link-row-grid">
+                  <div class="custom-link-field platform-field">
+                    <label class="custom-link-field-label">Platform</label>
+                    <select name="custom_platform[]" class="form-select custom-platform-select">
+                      <option value="twitter" {% if cl.platform == 'twitter' %}selected{% endif %}>𝕏 Twitter / X</option>
+                      <option value="telegram" {% if cl.platform == 'telegram' %}selected{% endif %}>✈️ Telegram</option>
+                      <option value="messenger" {% if cl.platform == 'messenger' %}selected{% endif %}>💬 Messenger</option>
+                      <option value="github" {% if cl.platform == 'github' %}selected{% endif %}>🐙 GitHub</option>
+                      <option value="discord" {% if cl.platform == 'discord' %}selected{% endif %}>👾 Discord</option>
+                      <option value="calendly" {% if cl.platform == 'calendly' %}selected{% endif %}>📅 Calendly (Schedule)</option>
+                      <option value="behance" {% if cl.platform == 'behance' %}selected{% endif %}>🎨 Behance Portfolio</option>
+                      <option value="spotify" {% if cl.platform == 'spotify' %}selected{% endif %}>🎵 Spotify / Music</option>
+                      <option value="pinterest" {% if cl.platform == 'pinterest' %}selected{% endif %}>📌 Pinterest</option>
+                      <option value="custom" {% if cl.platform == 'custom' %}selected{% endif %}>🌐 Custom Link</option>
+                    </select>
+                  </div>
+                  <div class="custom-link-field title-field">
+                    <label class="custom-link-field-label">Display Title</label>
+                    <input type="text" name="custom_title[]" class="form-input custom-title-input" placeholder="Display Title" value="{{ cl.title }}">
+                  </div>
+                  <div class="custom-link-field url-field">
+                    <label class="custom-link-field-label">Destination URL</label>
+                    <input type="url" name="custom_url[]" class="form-input custom-url-input" placeholder="https://..." value="{{ cl.url }}" required>
+                  </div>
+                  <div class="custom-link-field delete-field">
+                    <label class="custom-link-field-label">&nbsp;</label>
+                    <button type="button" class="btn-remove-custom-link" title="Remove Link">
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            {% endif %}
+          </div>
+          
+          <div id="custom-links-empty-state" class="custom-links-empty-state" style="{% if employee.custom_links %}display: none;{% endif %}">
+            <span>No custom channel links added yet. Click <strong>"+ Add Custom Link"</strong> to add Twitter/X, Telegram, Messenger, etc.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Visual Media & Assets Card -->
+      <div class="form-card-box">
+        <div class="section-head">
+          <div class="section-badge-num">4</div>
+          <div>
+            <h2 class="section-head-title">Profile Photo & Custom Logo</h2>
+            <p class="section-head-desc">Upload high-resolution photography for verified corporate presentation.</p>
+          </div>
+        </div>
+
+        <div class="modern-upload-grid">
+          <!-- Profile Avatar Dropzone -->
+          <div class="upload-drop-card">
+            {% if employee.profile_image %}
+              <img id="profile_preview" src="/{{ employee.profile_image }}" class="upload-avatar-circle" alt="Current Photo">
+            {% else %}
+              <div id="profile_placeholder" class="upload-avatar-circle">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                  <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+              </div>
+              <img id="profile_preview" src="" class="upload-avatar-circle" style="display: none;" alt="Avatar Preview">
+            {% endif %}
+            <div class="upload-prompt-text">Change Profile Photo</div>
+            <div class="upload-sub-text">PNG, JPG, WEBP • Max 5MB</div>
+            <input type="file" id="profile_image" name="profile_image" accept="image/png, image/jpeg, image/webp" class="upload-file-hidden">
+          </div>
+
+          <!-- Custom Company Logo Dropzone -->
+          <div class="upload-drop-card">
+            {% if employee.company_logo %}
+              <img id="logo_preview" src="/{{ employee.company_logo }}" class="upload-avatar-circle" style="border-radius: 14px;" alt="Current Logo">
+            {% else %}
+              <div id="logo_placeholder" class="upload-avatar-circle" style="border-radius: 14px;">
+                <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect>
+                  <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path>
+                </svg>
+              </div>
+              <img id="logo_preview" src="" class="upload-avatar-circle" style="border-radius: 14px; display: none;" alt="Logo Preview">
+            {% endif %}
+            <div class="upload-prompt-text">Change Custom Logo</div>
+            <div class="upload-sub-text">Overrides global company logo</div>
+            <input type="file" id="company_logo" name="company_logo" accept="image/png, image/jpeg, image/webp" class="upload-file-hidden">
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Publishing Status Card -->
+      <div class="form-card-box">
+        <div class="section-head">
+          <div class="section-badge-num">5</div>
+          <div>
+            <h2 class="section-head-title">Publication & Access Status</h2>
+            <p class="section-head-desc">Control whether this profile and its QR code are immediately live.</p>
+          </div>
+        </div>
+
+        <label class="toggle-switch-card">
+          <div class="toggle-switch-info">
+            <span class="toggle-switch-title">Profile is Active & Publicly Accessible</span>
+            <span class="toggle-switch-desc">When disabled, visitors will see the "Profile Currently Unavailable" notice.</span>
+          </div>
+          <div class="custom-switch">
+            <input type="checkbox" name="is_active" value="1" {% if employee.is_active %}checked{% endif %}>
+            <span class="switch-track"></span>
+          </div>
+        </label>
+      </div>
+
+      <!-- Form Action Bar -->
+      <div class="form-sticky-actions">
+        <a href="{{ url_for('admin.employee_details', id=employee.id) }}" class="btn btn-secondary" style="padding: 12px 22px;">
+          Cancel
+        </a>
+        <button type="submit" class="btn btn-primary" style="padding: 12px 32px; font-size: 0.96rem;">
+          💾 Save Changes
+        </button>
+      </div>
+
+    </div>
+
+  </div>
+</form>
+{% endblock %}

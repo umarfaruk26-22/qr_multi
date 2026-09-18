@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}{{ company_settings.company_name | default('Apex Innovations') }}{% endblock %}</title>
+  
+  {% block meta %}
+  <meta name="description" content="Digital profile and verified QR review card.">
+  {% endblock %}
+
+  <!-- Dynamic Branding Colors via CSS Variables -->
+  <style>
+    :root {
+      --primary-color: {{ company_settings.primary_color | default('#4f46e5') }};
+      --secondary-color: {{ company_settings.secondary_color | default('#06b6d4') }};
+    }
+  </style>
+
+  <!-- Global Design System -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+  {% block extra_css %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="toast-item toast-{{ category }}">
+            <span>{{ message }}</span>
+            <button class="toast-close" aria-label="Close" onclick="this.parentElement.remove()">&times;</button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+  </div>
+
+  {% block content %}{% endblock %}
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+  {% block extra_js %}{% endblock %}
+</body>
+</html>
