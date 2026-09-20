@@ -10,6 +10,7 @@ if dotenv_path.exists():
 
 class Config:
     """Base application configuration."""
+    BASE_DIR = BASE_DIR
     SECRET_KEY = os.getenv('SECRET_KEY', 'dev_default_secret_key_123456789')
     BASE_URL = os.getenv('BASE_URL', 'http://127.0.0.1:5000').rstrip('/')
     
