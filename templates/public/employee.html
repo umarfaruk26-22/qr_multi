@@ -214,8 +214,8 @@
         <div class="hero-ctas-wrapper">
           <!-- 1. High-Impact Hero CTA: Google Review Card with AI Assistant -->
           {% if employee.google_review_url %}
-          <div class="hub-hero-card review-hero-card btn-open-ai-modal" id="hero-google-review-card" data-open-ai-review="true" role="button" tabindex="0">
-            <div class="hero-card-left">
+          <div class="hub-hero-card review-hero-card" id="hero-google-review-card">
+            <div class="hero-card-left btn-open-ai-modal" role="button" tabindex="0" title="Click to open AI Review Assistant">
               <div class="hero-icon-wrapper icon-google-wrapper">
                 <svg width="28" height="28" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -231,14 +231,17 @@
                   <span class="ai-powered-pill">⚡ Gemini AI</span>
                 </div>
                 <h2 class="hero-card-title">Leave a 5-Star Google Review</h2>
-                <p class="hero-card-desc">Click below to generate authentic review suggestions in 1-click or write directly.</p>
+                <p class="hero-card-desc">Write a review directly on Google or generate AI suggestions in 1-click.</p>
               </div>
             </div>
 
             <div class="hero-card-action-group">
-              <button type="button" id="btn-open-ai-review" class="btn-hero-action google-action-btn" title="Leave a 5-Star Google Review">
-                <span>Rate on Google</span>
+              <a href="{{ employee.google_review_url }}" target="_blank" rel="noopener noreferrer" class="btn-hero-action google-direct-btn" id="btn-direct-google-review" title="Write Google Review Directly" data-track-event="google_review_click">
+                <span>Write Review</span>
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+              </a>
+              <button type="button" id="btn-open-ai-review" class="btn-hero-action google-action-btn btn-open-ai-modal" title="Use AI Review Assistant">
+                <span>⚡ AI Writer</span>
               </button>
             </div>
           </div>

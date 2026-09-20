@@ -208,7 +208,12 @@ document.addEventListener('DOMContentLoaded', () => {
   if (btnCloseAiModal) btnCloseAiModal.addEventListener('click', closeAiModal);
   
   document.querySelectorAll('.btn-open-ai-modal, [data-open-ai-review]').forEach((btn) => {
-    btn.addEventListener('click', openAiModal);
+    btn.addEventListener('click', (e) => {
+      if (e.target.closest('#btn-direct-google-review')) {
+        return;
+      }
+      openAiModal();
+    });
   });
   
   if (sheetDragHandle) {
@@ -520,7 +525,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 1-Click Copy and Post to Google My Business
   if (btnPostGoogle) {
-    btnPostGoogle.addEventListener('click', async () => {
+    btnPostGoogle.addEventListener('click', async (e) => {
+      e.preventDefault();
       const reviewText = selectedTextarea?.value.trim() || '';
       const targetGmbUrl = getDirectGoogleReviewUrl(gmbUrl);
 
@@ -529,10 +535,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return;
       }
 
-      // Copy text to clipboard
-      await copyToClipboard(reviewText, 'Review copied! Just paste (Ctrl+V) on Google.');
+      // 1. Copy text to clipboard immediately
+      copyToClipboard(reviewText, 'Review copied! Opening Google Reviews...');
 
-      // Button UI Animation Feedback
+      // 2. Button UI Animation Feedback
       btnPostGoogle.classList.add('copied-state');
       btnPostGoogle.innerHTML = `
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
@@ -541,22 +547,36 @@ document.addEventListener('DOMContentLoaded', () => {
 
       logEvent('ai_review_copied_gmb_click');
 
-      // Open Google Review URL in new tab after brief 350ms tick
-      setTimeout(() => {
-        window.open(targetGmbUrl, '_blank');
-        
-        // Reset button state
+      // 3. Open Google Review URL in new tab immediately without async delay to avoid popup blocker
+      let opened = false;
+      try {
+        const win = window.open(targetGmbUrl, '_blank');
+        if (win && !win.closed && typeof win.closed !== 'undefined') {
+          opened = true;
+          win.focus();
+        }
+      } catch (err) {
+        opened = false;
+      }
+
+      // If blocked by popup blocker or running in restricted mobile browser/webview, fallback to direct location change
+      if (!opened) {
         setTimeout(() => {
-          btnPostGoogle.classList.remove('copied-state');
-          btnPostGoogle.innerHTML = `
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-            </svg>
-            <span>🚀 Copy & Post on Google</span>
-          `;
-        }, 2500);
-      }, 350);
+          window.location.href = targetGmbUrl;
+        }, 150);
+      }
+
+      // Reset button state after brief delay
+      setTimeout(() => {
+        btnPostGoogle.classList.remove('copied-state');
+        btnPostGoogle.innerHTML = `
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          <span>🚀 Copy & Post on Google</span>
+        `;
+      }, 3000);
     });
   }
 
