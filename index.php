@@ -36,6 +36,10 @@ curl_setopt($ch, CURLOPT_HEADER, true);
 curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false);
 curl_setopt($ch, CURLOPT_TIMEOUT, 60);
 
+// Check if request is multipart/form-data
+$content_type = $_SERVER['CONTENT_TYPE'] ?? $_SERVER['HTTP_CONTENT_TYPE'] ?? '';
+$is_multipart = (stripos($content_type, 'multipart/form-data') !== false) || !empty($_FILES);
+
 $req_headers = [];
 $incoming_headers = function_exists('getallheaders') ? getallheaders() : [];
 
@@ -50,6 +54,9 @@ foreach ($incoming_headers as $name => $value) {
     } elseif ($lower === 'cookie') {
         $req_headers[] = "Cookie: {$value}";
         $cookie_found = true;
+    } elseif ($lower === 'content-type' && $is_multipart) {
+        // Skip client content-type header for multipart so cURL generates its own multipart boundary header
+        continue;
     } elseif ($lower !== 'content-length') {
         $req_headers[] = "{$name}: {$value}";
     }
@@ -61,9 +68,55 @@ if (!$cookie_found && !empty($_SERVER['HTTP_COOKIE'])) {
 
 curl_setopt($ch, CURLOPT_HTTPHEADER, $req_headers);
 
+function flatten_array_for_curl($data, $prefix = '') {
+    $result = [];
+    foreach ($data as $key => $value) {
+        $full_key = $prefix === '' ? (string)$key : "{$prefix}[{$key}]";
+        if (is_array($value)) {
+            $result = array_merge($result, flatten_array_for_curl($value, $full_key));
+        } else {
+            $result[$full_key] = (string)$value;
+        }
+    }
+    return $result;
+}
+
+function process_files_for_curl($files, $prefix = '') {
+    $result = [];
+    foreach ($files as $name => $file) {
+        $key = $prefix === '' ? $name : "{$prefix}[{$name}]";
+        if (isset($file['tmp_name']) && is_array($file['tmp_name'])) {
+            $sub_files = [];
+            foreach ($file['tmp_name'] as $sub_k => $sub_v) {
+                $sub_files[$sub_k] = [
+                    'name' => $file['name'][$sub_k],
+                    'type' => $file['type'][$sub_k],
+                    'tmp_name' => $file['tmp_name'][$sub_k],
+                    'error' => $file['error'][$sub_k],
+                    'size' => $file['size'][$sub_k],
+                ];
+            }
+            $result = array_merge($result, process_files_for_curl($sub_files, $key));
+        } elseif (isset($file['error'])) {
+            if ($file['error'] === UPLOAD_ERR_OK && !empty($file['tmp_name']) && file_exists($file['tmp_name'])) {
+                $mime = !empty($file['type']) ? $file['type'] : (function_exists('mime_content_type') ? @mime_content_type($file['tmp_name']) : 'application/octet-stream');
+                $result[$key] = new CURLFile($file['tmp_name'], $mime, $file['name']);
+            }
+        }
+    }
+    return $result;
+}
+
 if (in_array($_SERVER['REQUEST_METHOD'], ['POST', 'PUT', 'PATCH', 'DELETE'])) {
-    $input_body = file_get_contents('php://input');
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $input_body);
+    if ($is_multipart) {
+        $post_fields = flatten_array_for_curl($_POST);
+        $file_fields = process_files_for_curl($_FILES);
+        $all_fields = array_merge($post_fields, $file_fields);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $all_fields);
+    } else {
+        $input_body = file_get_contents('php://input');
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $input_body);
+    }
 }
 
 $response = curl_exec($ch);

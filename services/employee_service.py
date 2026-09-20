@@ -116,6 +116,10 @@ def get_custom_links_for_employee(employee_id: int):
 
 def _extract_custom_links(form_data):
     """Extract list of custom links from submitted form data."""
+    platforms = []
+    titles = []
+    urls = []
+
     if hasattr(form_data, 'getlist'):
         platforms = form_data.getlist('custom_platform[]') or form_data.getlist('custom_platform')
         titles = form_data.getlist('custom_title[]') or form_data.getlist('custom_title')
@@ -127,8 +131,27 @@ def _extract_custom_links(form_data):
         if isinstance(platforms, str): platforms = [platforms]
         if isinstance(titles, str): titles = [titles]
         if isinstance(urls, str): urls = [urls]
-    else:
-        return []
+
+    # If list extraction is empty, check for indexed keys like custom_platform[0], custom_platform[1], etc.
+    if not urls and form_data:
+        keys = list(form_data.keys())
+        plat_dict, title_dict, url_dict = {}, {}, {}
+        for k in keys:
+            m_plat = re.match(r'^custom_platform\[(\d+)\]$', k)
+            if m_plat:
+                plat_dict[int(m_plat.group(1))] = form_data.get(k)
+            m_title = re.match(r'^custom_title\[(\d+)\]$', k)
+            if m_title:
+                title_dict[int(m_title.group(1))] = form_data.get(k)
+            m_url = re.match(r'^custom_url\[(\d+)\]$', k)
+            if m_url:
+                url_dict[int(m_url.group(1))] = form_data.get(k)
+        
+        all_indices = sorted(set(list(plat_dict.keys()) + list(title_dict.keys()) + list(url_dict.keys())))
+        if all_indices:
+            platforms = [plat_dict.get(i, 'custom') for i in all_indices]
+            titles = [title_dict.get(i, '') for i in all_indices]
+            urls = [url_dict.get(i, '') for i in all_indices]
 
     custom_links = []
     count = max(len(platforms), len(titles), len(urls))
