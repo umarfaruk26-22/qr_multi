@@ -235,6 +235,7 @@ def get_employees(search=None, status=None, page=1, per_page=20):
         ORDER BY e.id DESC
         LIMIT %s OFFSET %s
     """
+    query_params = list(params) + [per_page, offset]
     employees = query_db(select_query, tuple(query_params))
     if employees:
         employees = [_ensure_employee_qr(e) for e in employees]
