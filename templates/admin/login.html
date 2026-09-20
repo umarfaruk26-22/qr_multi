@@ -193,61 +193,6 @@
     line-height: 1.45;
   }
 
-  /* 1-Click Quick Demo Credentials Pill */
-  .quick-demo-pill {
-    width: 100%;
-    background: rgba(99, 102, 241, 0.08);
-    border: 1px dashed rgba(129, 140, 248, 0.4);
-    border-radius: 14px;
-    padding: 10px 14px;
-    margin-bottom: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    cursor: pointer;
-    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-    text-align: left;
-  }
-
-  .quick-demo-pill:hover {
-    background: rgba(99, 102, 241, 0.16);
-    border-color: #818cf8;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 16px rgba(99, 102, 241, 0.2);
-  }
-
-  .quick-demo-pill:active {
-    transform: scale(0.98);
-  }
-
-  .demo-pill-text {
-    font-size: 0.78rem;
-    color: #cbd5e1;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .demo-pill-text strong {
-    color: #fff;
-    font-weight: 700;
-  }
-
-  .demo-pill-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 10px;
-    background: #4f46e5;
-    color: #fff;
-    border-radius: 8px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    white-space: nowrap;
-    box-shadow: 0 2px 8px rgba(79, 70, 229, 0.4);
-  }
-
   /* Form Elements */
   .admin-form-group {
     margin-bottom: 20px;
@@ -455,14 +400,6 @@
       <p class="admin-login-desc">Sign in with administrative credentials to manage digital identities, reviews & QR analytics.</p>
     </div>
 
-    <!-- 1-Click Quick Demo Auto-Fill Pill -->
-    <div class="quick-demo-pill" id="btn-autofill-credentials" title="Click to auto-fill default admin credentials">
-      <div class="demo-pill-text">
-        <span style="font-size: 0.70rem; text-transform: uppercase; letter-spacing: 0.05em; color: #818cf8; font-weight: 700;">Quick Demo Login</span>
-        <span>Username: <strong>admin</strong> • Password: <strong>Admin@12345</strong></span>
-      </div>
-      <span class="demo-pill-badge">⚡ Auto-Fill</span>
-    </div>
 
     <!-- Login Form -->
     <form method="POST" action="{{ url_for('auth.login', next=request.args.get('next')) }}" id="admin-login-form">
@@ -541,31 +478,13 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-  const usernameInput = document.getElementById('username');
   const passwordInput = document.getElementById('password');
-  const btnAutofill = document.getElementById('btn-autofill-credentials');
   const btnTogglePassword = document.getElementById('btn-toggle-password');
   const iconEyeOpen = document.getElementById('icon-eye-open');
   const iconEyeClosed = document.getElementById('icon-eye-closed');
   const loginForm = document.getElementById('admin-login-form');
   const submitBtn = document.getElementById('btn-submit-signin');
 
-  // 1-Click Auto Fill Demo Credentials
-  if (btnAutofill && usernameInput && passwordInput) {
-    btnAutofill.addEventListener('click', () => {
-      usernameInput.value = 'admin';
-      passwordInput.value = 'Admin@12345';
-      usernameInput.focus();
-
-      // Brief animation feedback
-      btnAutofill.style.borderColor = '#10b981';
-      btnAutofill.style.background = 'rgba(16, 185, 129, 0.15)';
-      setTimeout(() => {
-        btnAutofill.style.borderColor = '';
-        btnAutofill.style.background = '';
-      }, 1000);
-    });
-  }
 
   // Toggle Password Visibility
   if (btnTogglePassword && passwordInput && iconEyeOpen && iconEyeClosed) {
