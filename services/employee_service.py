@@ -235,8 +235,9 @@ def get_employees(search=None, status=None, page=1, per_page=20):
         ORDER BY e.id DESC
         LIMIT %s OFFSET %s
     """
-    query_params = list(params) + [per_page, offset]
     employees = query_db(select_query, tuple(query_params))
+    if employees:
+        employees = [_ensure_employee_qr(e) for e in employees]
     
     return {
         'employees': employees or [],
@@ -245,6 +246,49 @@ def get_employees(search=None, status=None, page=1, per_page=20):
         'per_page': per_page,
         'pages': pages
     }
+
+
+def _ensure_employee_qr(emp):
+    """Ensure that the employee has valid QR code files and database records."""
+    if not emp:
+        return emp
+        
+    png_path = emp.get('png_path')
+    needs_generation = False
+    
+    if not png_path:
+        needs_generation = True
+    else:
+        full_path = Config.BASE_DIR / png_path
+        if not full_path.exists():
+            needs_generation = True
+            
+    if needs_generation:
+        try:
+            company_settings = get_company_settings()
+            company_name = company_settings.get('company_name', 'Nexalogic Techno')
+            logo_full_path = None
+            if emp.get('company_logo') and (Config.BASE_DIR / emp['company_logo']).exists():
+                logo_full_path = str(Config.BASE_DIR / emp['company_logo'])
+            elif company_settings.get('company_logo') and (Config.BASE_DIR / company_settings['company_logo']).exists():
+                logo_full_path = str(Config.BASE_DIR / company_settings['company_logo'])
+                
+            qr_data = generate_qr_code(
+                slug=emp['slug'],
+                employee_id=emp['id'],
+                employee_name=f"{emp.get('first_name', '')} {emp.get('last_name', '')}".strip(),
+                designation=emp.get('designation', ''),
+                company_name=company_name,
+                company_logo_path=logo_full_path
+            )
+            emp['qr_url'] = qr_data['qr_url']
+            emp['png_path'] = qr_data['png_path']
+            emp['svg_path'] = qr_data['svg_path']
+            emp['branded_png_path'] = qr_data['branded_png_path']
+        except Exception as e:
+            pass
+        
+    return emp
 
 
 def get_employee_by_id(employee_id, include_deleted=False):
@@ -270,6 +314,7 @@ def get_employee_by_id(employee_id, include_deleted=False):
         if emp.get('google_review_url'):
             emp['google_review_url'] = optimize_google_review_url(emp['google_review_url'])
         emp['custom_links'] = get_custom_links_for_employee(emp['id'])
+        emp = _ensure_employee_qr(emp)
     return emp
 
 
@@ -295,6 +340,7 @@ def get_employee_by_slug(slug):
         if emp.get('google_review_url'):
             emp['google_review_url'] = optimize_google_review_url(emp['google_review_url'])
         emp['custom_links'] = get_custom_links_for_employee(emp['id'])
+        emp = _ensure_employee_qr(emp)
     return emp
 
 
