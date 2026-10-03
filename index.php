@@ -4,9 +4,61 @@ $backend_host = '127.0.0.1';
 $backend_port = 58432;
 $backend_url = "http://{$backend_host}:{$backend_port}";
 $app_dir = __DIR__;
+$boot_log = $app_dir . '/gunicorn_boot.log';
+$error_log = $app_dir . '/gunicorn_error.log';
+
+// Diagnostics endpoint: access with ?__diag=1 or /__diag
+if (isset($_GET['__diag']) || (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/__diag') === 0)) {
+    header('Content-Type: application/json; charset=utf-8');
+    $disabled = explode(',', (string)ini_get('disable_functions'));
+    $disabled = array_map('trim', $disabled);
+
+    $diag = [
+        'timestamp' => date('c'),
+        'php_version' => PHP_VERSION,
+        'app_dir' => $app_dir,
+        'user' => function_exists('get_current_user') ? get_current_user() : 'unknown',
+        'exec_allowed' => function_exists('exec') && !in_array('exec', $disabled),
+        'shell_exec_allowed' => function_exists('shell_exec') && !in_array('shell_exec', $disabled),
+        'fsockopen_allowed' => function_exists('fsockopen') && !in_array('fsockopen', $disabled),
+        'curl_allowed' => function_exists('curl_init'),
+        'disabled_functions' => $disabled,
+        'env_exists' => file_exists($app_dir . '/.env'),
+        'venv_dir_exists' => is_dir($app_dir . '/venv'),
+        'venv_python_exists' => file_exists($app_dir . '/venv/bin/python') || file_exists($app_dir . '/venv/bin/python3'),
+        'venv_gunicorn_exists' => file_exists($app_dir . '/venv/bin/gunicorn'),
+        'boot_log_exists' => file_exists($boot_log),
+        'boot_log_content' => file_exists($boot_log) ? substr(file_get_contents($boot_log), -2000) : null,
+        'error_log_exists' => file_exists($error_log),
+        'error_log_content' => file_exists($error_log) ? substr(file_get_contents($error_log), -2000) : null,
+    ];
+
+    if ($diag['exec_allowed']) {
+        @exec("python3 --version 2>&1", $py_ver);
+        @exec("which python3 2>&1", $which_py);
+        @exec("which gunicorn 2>&1", $which_gun);
+        @exec("ps aux | grep -E 'gunicorn|python' | grep -v grep 2>&1", $ps_out);
+        $diag['system_python_version'] = implode("\n", (array)$py_ver);
+        $diag['which_python3'] = implode("\n", (array)$which_py);
+        $diag['which_gunicorn'] = implode("\n", (array)$which_gun);
+        $diag['running_processes'] = $ps_out;
+        
+        if ($diag['venv_python_exists']) {
+            $venv_py = file_exists($app_dir . '/venv/bin/python3') ? $app_dir . '/venv/bin/python3' : $app_dir . '/venv/bin/python';
+            @exec("cd {$app_dir} && {$venv_py} -c \"import app; print('App import SUCCESS')\" 2>&1", $app_import_test, $import_code);
+            $diag['app_import_test'] = [
+                'exit_code' => $import_code,
+                'output' => implode("\n", (array)$app_import_test)
+            ];
+        }
+    }
+
+    echo json_encode($diag, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+    exit;
+}
 
 function is_backend_alive($host, $port) {
-    $fp = @fsockopen($host, $port, $errno, $errstr, 0.4);
+    $fp = @fsockopen($host, $port, $errno, $errstr, 0.5);
     if ($fp) {
         fclose($fp);
         return true;
@@ -14,10 +66,43 @@ function is_backend_alive($host, $port) {
     return false;
 }
 
+function start_backend($app_dir, $host, $port, $boot_log, $error_log) {
+    // 1. Detect best python & gunicorn runners
+    $venv_bin = $app_dir . '/venv/bin';
+    $gunicorn_cmd = null;
+
+    if (file_exists($venv_bin . '/gunicorn') && is_executable($venv_bin . '/gunicorn')) {
+        $gunicorn_cmd = "{$venv_bin}/gunicorn";
+    } elseif (file_exists($venv_bin . '/python3')) {
+        $gunicorn_cmd = "{$venv_bin}/python3 -m gunicorn";
+    } elseif (file_exists($venv_bin . '/python')) {
+        $gunicorn_cmd = "{$venv_bin}/python -m gunicorn";
+    } else {
+        // Virtual environment does not exist, try auto-creating or use system python
+        if (function_exists('exec')) {
+            @exec("cd {$app_dir} && python3 -m venv venv && ./venv/bin/pip install -r requirements.txt gunicorn >> {$boot_log} 2>&1");
+            if (file_exists($venv_bin . '/gunicorn')) {
+                $gunicorn_cmd = "{$venv_bin}/gunicorn";
+            } elseif (file_exists($venv_bin . '/python3')) {
+                $gunicorn_cmd = "{$venv_bin}/python3 -m gunicorn";
+            }
+        }
+        if (!$gunicorn_cmd) {
+            $gunicorn_cmd = "gunicorn";
+        }
+    }
+
+    $env_export = "export PYTHONPATH=\"{$app_dir}:\$PYTHONPATH\" && export PATH=\"{$venv_bin}:/usr/local/bin:/usr/bin:/bin:\$PATH\"";
+    $full_cmd = "cd {$app_dir} && {$env_export} && nohup {$gunicorn_cmd} --workers 2 --bind {$host}:{$port} --timeout 120 --error-logfile {$error_log} --access-logfile - --capture-output app:app >> {$boot_log} 2>&1 &";
+
+    if (function_exists('exec')) {
+        @exec($full_cmd);
+    }
+}
+
 if (!is_backend_alive($backend_host, $backend_port)) {
-    $cmd = "cd {$app_dir} && ./venv/bin/gunicorn --workers 2 --bind {$backend_host}:{$backend_port} app:app --daemon";
-    exec($cmd);
-    for ($i = 0; $i < 6; $i++) {
+    start_backend($app_dir, $backend_host, $backend_port, $boot_log, $error_log);
+    for ($i = 0; $i < 8; $i++) {
         usleep(400000);
         if (is_backend_alive($backend_host, $backend_port)) {
             break;
@@ -124,7 +209,20 @@ $response = curl_exec($ch);
 if ($response === false) {
     http_response_code(502);
     header('Content-Type: text/html; charset=utf-8');
-    echo "<h1>502 Bad Gateway</h1><p>Starting backend service... Please refresh.</p>";
+    $curl_err = curl_error($ch);
+    $boot_err = file_exists($boot_log) ? htmlspecialchars(substr(file_get_contents($boot_log), -1500)) : 'No boot log found.';
+    $err_err = file_exists($error_log) ? htmlspecialchars(substr(file_get_contents($error_log), -1500)) : 'No error log found.';
+    
+    echo "<!DOCTYPE html><html><head><title>502 Bad Gateway</title><style>body{font-family:sans-serif;padding:30px;line-height:1.6;background:#0f172a;color:#f8fafc;}pre{background:#1e293b;padding:15px;border-radius:8px;overflow-x:auto;color:#38bdf8;}h1{color:#ef4444;}</style></head><body>";
+    echo "<h1>502 Bad Gateway</h1><p>Starting backend service or backend is unavailable. Please refresh.</p>";
+    echo "<p><small>cURL error: " . htmlspecialchars($curl_err) . "</small></p>";
+    if (!empty($boot_err) && $boot_err !== 'No boot log found.') {
+        echo "<h3>Startup Output:</h3><pre>{$boot_err}</pre>";
+    }
+    if (!empty($err_err) && $err_err !== 'No error log found.') {
+        echo "<h3>Error Log:</h3><pre>{$err_err}</pre>";
+    }
+    echo "</body></html>";
     curl_close($ch);
     exit;
 }
