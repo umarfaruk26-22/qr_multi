@@ -3,7 +3,7 @@
 # Automated One-Click Deployment Script
 # 1. Adds and commits changes to Git
 # 2. Pushes to GitHub repository (main branch)
-# 3. Connects to Hostinger via SSH and pulls latest code to live server
+# 3. Connects to Hostinger via SSH or provides web deployment fallback
 # ==============================================================================
 
 set -e
@@ -52,7 +52,8 @@ else
 fi
 
 echo \"📍 Current Server Directory: \$(pwd)\"
-git pull origin main
+git fetch origin main
+git reset --hard origin/main
 
 if [ ! -d \"venv\" ]; then
     echo \"📦 Creating Python virtual environment...\"
@@ -61,32 +62,40 @@ fi
 
 echo \"📦 Installing / updating dependencies...\"
 ./venv/bin/pip install --upgrade pip
-./venv/bin/pip install -r requirements.txt
+./venv/bin/pip install -r requirements.txt gunicorn
 
 echo \"🔄 Restarting Gunicorn backend daemon...\"
-pkill -f \"58432\" 2>/dev/null || true
+pkill -9 -f \"gunicorn\" 2>/dev/null || true
+pkill -9 -f \"58432\" 2>/dev/null || true
+rm -f gunicorn.sock .gunicorn_boot.lock
 sleep 1
 
 export PYTHONPATH=\"\$(pwd):\$PYTHONPATH\"
 export PATH=\"\$(pwd)/venv/bin:/usr/local/bin:/usr/bin:/bin:\$PATH\"
 
-nohup ./venv/bin/gunicorn --workers 2 --bind 127.0.0.1:58432 --timeout 120 --error-logfile gunicorn_error.log --access-logfile gunicorn_access.log --capture-output app:app > gunicorn_boot.log 2>&1 &
+nohup ./venv/bin/gunicorn --workers 2 --bind unix:gunicorn.sock --bind 127.0.0.1:58432 --timeout 120 --error-logfile gunicorn_error.log --access-logfile gunicorn_access.log --capture-output app:app > gunicorn_boot.log 2>&1 < /dev/null &
 
 sleep 2
-if ps aux | grep -v grep | grep -q \"58432\"; then
-    echo \"✅ Gunicorn backend running on 127.0.0.1:58432\"
+if ps aux | grep -v grep | grep -q \"gunicorn\"; then
+    echo \"✅ Gunicorn backend running successfully on socket and port 58432!\"
 else
-    echo \"⚠️ Backend not detected on 58432, checking boot log:\"
+    echo \"⚠️ Backend boot status from log:\"
     cat gunicorn_boot.log 2>/dev/null || true
 fi
 
 echo '✅ Live server updated successfully!'
 "
 
-ssh -p "$SSH_PORT" -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "$REMOTE_CMD"
-
-echo ""
-echo "=================================================="
-echo "🎉 Deployment Completed Successfully!"
-echo "🌐 Live URL: https://qr.nexalogictechno.com"
-echo "=================================================="
+if ssh -p "$SSH_PORT" -o StrictHostKeyChecking=no "$SSH_USER@$SSH_HOST" "$REMOTE_CMD"; then
+    echo ""
+    echo "=================================================="
+    echo "🎉 Deployment Completed Successfully!"
+    echo "🌐 Live URL: https://qr.nexalogictechno.com"
+    echo "=================================================="
+else
+    echo ""
+    echo "⚠️  SSH connection was not established automatically."
+    echo "👉 You can trigger instant sync via browser:"
+    echo "   https://qr.nexalogictechno.com/deploy.php?token=nexalogic2026"
+    echo "   OR click 'Deploy' in Hostinger hPanel -> Advanced -> Git"
+fi

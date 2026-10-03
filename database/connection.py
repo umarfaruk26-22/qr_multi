@@ -15,7 +15,7 @@ def get_connection_pool():
         try:
             _connection_pool = pooling.MySQLConnectionPool(
                 pool_name="employee_qr_pool",
-                pool_size=10,
+                pool_size=5,
                 pool_reset_session=True,
                 host=Config.DB_HOST,
                 port=Config.DB_PORT,
@@ -28,8 +28,28 @@ def get_connection_pool():
             )
             logger.info("MySQL Connection Pool initialized successfully.")
         except Error as e:
-            logger.error(f"Error initializing MySQL Connection Pool: {e}")
-            _connection_pool = None
+            if Config.DB_HOST == 'localhost':
+                try:
+                    _connection_pool = pooling.MySQLConnectionPool(
+                        pool_name="employee_qr_pool",
+                        pool_size=5,
+                        pool_reset_session=True,
+                        host="127.0.0.1",
+                        port=Config.DB_PORT,
+                        user=Config.DB_USER,
+                        password=Config.DB_PASSWORD,
+                        database=Config.DB_NAME,
+                        charset="utf8mb4",
+                        collation="utf8mb4_unicode_ci",
+                        autocommit=False
+                    )
+                    logger.info("MySQL Connection Pool initialized with 127.0.0.1 fallback.")
+                except Error as e2:
+                    logger.error(f"Error initializing MySQL Connection Pool: {e2}")
+                    _connection_pool = None
+            else:
+                logger.error(f"Error initializing MySQL Connection Pool: {e}")
+                _connection_pool = None
     return _connection_pool
 
 
@@ -51,7 +71,16 @@ def get_db_connection(database=None):
     if db_name:
         conn_params['database'] = db_name
         
-    return mysql.connector.connect(**conn_params)
+    try:
+        return mysql.connector.connect(**conn_params)
+    except Error as e:
+        if conn_params['host'] == 'localhost':
+            conn_params['host'] = '127.0.0.1'
+            try:
+                return mysql.connector.connect(**conn_params)
+            except Error:
+                pass
+        raise e
 
 
 @contextmanager
