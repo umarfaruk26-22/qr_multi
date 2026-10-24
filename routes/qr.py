@@ -47,16 +47,26 @@ def qr_scan_redirect(slug):
 @qr_bp.route('/admin/qr/download/<int:employee_id>/<file_format>')
 def download_qr(employee_id, file_format):
     """
-    Download QR code asset in PNG, SVG, or Branded PNG format.
+    Download QR code asset in JPEG Card, PNG Card, Raw PNG, or SVG format.
     """
     emp = get_employee_by_id(employee_id)
     if not emp:
         abort(404)
         
     slug = emp['slug']
-    file_format = file_format.lower()
+    file_format = (file_format or 'jpg').lower()
     
-    if file_format == 'png':
+    if file_format in ('jpg', 'jpeg', 'card', 'card_jpg'):
+        filename = f"{slug}_card.jpg"
+        filepath = Config.QR_PATH / filename
+        mimetype = 'image/jpeg'
+        download_name = f"{slug}_digital_card.jpg"
+    elif file_format in ('branded', 'branded_png', 'card_png'):
+        filename = f"{slug}_branded.png"
+        filepath = Config.QR_PATH / filename
+        mimetype = 'image/png'
+        download_name = f"{slug}_digital_card.png"
+    elif file_format == 'png':
         filename = f"{slug}.png"
         filepath = Config.QR_PATH / filename
         mimetype = 'image/png'
@@ -66,11 +76,6 @@ def download_qr(employee_id, file_format):
         filepath = Config.QR_PATH / filename
         mimetype = 'image/svg+xml'
         download_name = f"{slug}_qr.svg"
-    elif file_format in ('branded', 'branded_png'):
-        filename = f"{slug}_branded.png"
-        filepath = Config.QR_PATH / filename
-        mimetype = 'image/png'
-        download_name = f"{slug}_branded_qr.png"
     else:
         abort(400)
         
@@ -80,7 +85,7 @@ def download_qr(employee_id, file_format):
             slug=slug,
             employee_id=emp['id'],
             employee_name=f"{emp['first_name']} {emp['last_name']}".strip(),
-            designation=emp['designation']
+            designation=emp.get('designation', '')
         )
         
     if not filepath.exists():
@@ -92,3 +97,64 @@ def download_qr(employee_id, file_format):
         as_attachment=True,
         download_name=download_name
     )
+
+
+@qr_bp.route('/qr/download/<slug>')
+@qr_bp.route('/qr/download/<slug>/<file_format>')
+def public_download_qr(slug, file_format='jpg'):
+    """
+    Publicly accessible endpoint to download high-res branded JPEG/PNG card or raw QR code.
+    Allows employees or customers to export high quality image with name, role, and details.
+    """
+    slug = slug.strip().lower()
+    emp = get_employee_by_slug(slug)
+    if not emp:
+        abort(404)
+        
+    file_format = (file_format or 'jpg').lower()
+    
+    if file_format in ('jpg', 'jpeg', 'card', 'card_jpg'):
+        filename = f"{slug}_card.jpg"
+        filepath = Config.QR_PATH / filename
+        mimetype = 'image/jpeg'
+        download_name = f"{slug}_digital_card.jpg"
+    elif file_format in ('branded', 'branded_png', 'card_png'):
+        filename = f"{slug}_branded.png"
+        filepath = Config.QR_PATH / filename
+        mimetype = 'image/png'
+        download_name = f"{slug}_digital_card.png"
+    elif file_format in ('raw', 'raw_qr', 'png'):
+        filename = f"{slug}.png"
+        filepath = Config.QR_PATH / filename
+        mimetype = 'image/png'
+        download_name = f"{slug}_qr.png"
+    elif file_format == 'svg':
+        filename = f"{slug}.svg"
+        filepath = Config.QR_PATH / filename
+        mimetype = 'image/svg+xml'
+        download_name = f"{slug}_qr.svg"
+    else:
+        filename = f"{slug}_card.jpg"
+        filepath = Config.QR_PATH / filename
+        mimetype = 'image/jpeg'
+        download_name = f"{slug}_digital_card.jpg"
+        
+    # Regenerate on-the-fly if file is missing
+    if not filepath.exists():
+        generate_qr_code(
+            slug=slug,
+            employee_id=emp['id'],
+            employee_name=f"{emp['first_name']} {emp['last_name']}".strip(),
+            designation=emp.get('designation', '')
+        )
+        
+    if not filepath.exists():
+        abort(404)
+        
+    return send_file(
+        str(filepath),
+        mimetype=mimetype,
+        as_attachment=True,
+        download_name=download_name
+    )
+

@@ -1,5 +1,6 @@
 import json
 import logging
+import random
 import re
 import urllib.request
 import urllib.error
@@ -22,24 +23,26 @@ def sanitize_review_text(text, company_name=None):
             
     cleaned = str(text)
     for t in targets:
-        # Match 'at/with/from/by Nexalogic Techno' or just 'Nexalogic Techno'
         cleaned = re.sub(rf'\b(?:at|with|from|by)\s+{re.escape(t)}[!?,.]*\b', '', cleaned, flags=re.IGNORECASE)
         cleaned = re.sub(rf'\b{re.escape(t)}[!?,.]*\b', '', cleaned, flags=re.IGNORECASE)
     
-    # Remove awkward double punctuation or spaces
     cleaned = re.sub(r'\s+', ' ', cleaned)
     cleaned = re.sub(r'\s+([!?,.])', r'\1', cleaned)
     return cleaned.strip()
 
 
 def limit_to_max_words(text, max_words=15):
-    """Ensures text strictly has at most max_words words."""
+    """Ensures text strictly has at most max_words words without awkward trailing prepositions."""
     if not text:
         return ""
     words = str(text).strip().split()
     if len(words) <= max_words:
         return str(text).strip()
-    return " ".join(words[:max_words]).rstrip(",;:-") + "."
+    truncated = " ".join(words[:max_words]).rstrip(",;:- ")
+    trailing_words = {'the', 'with', 'and', 'for', 'of', 'in', 'to', 'a', 'an', 'at', 'by', 'our', 'my'}
+    while truncated.split() and truncated.split()[-1].lower() in trailing_words:
+        truncated = " ".join(truncated.split()[:-1]).rstrip(",;:- ")
+    return truncated.rstrip(".!?,") + "."
 
 
 def generate_review_suggestions(
@@ -53,16 +56,16 @@ def generate_review_suggestions(
     categories=None
 ):
     """
-    Generates 3 context-aware Google Review suggestions using Gemini AI API
-    tailored to specific star ratings (1 to 5) and business categories/services.
+    Generates 3 context-aware, highly varied Google Review suggestions using Gemini AI API
+    tailored to specific employee details, star ratings (1 to 5), and business domains.
     STRICT CONSTRAINT: Maximum 15 words per review suggestion.
     NO MENTION OF NEXALOGIC TECHNO OR PLATFORM COMPANY NAME.
-    Falls back gracefully to intelligent domain-tailored templates if API is unreachable.
+    Falls back gracefully to intelligent, randomized domain-tailored templates if API is unreachable.
     """
     api_key = Config.GEMINI_API_KEY
-    model = Config.GEMINI_MODEL or 'gemini-3.7-flash'
     
     employee_name = employee_name or 'the team member'
+    first_name = employee_name.split()[0] if employee_name else 'Professional'
     designation = designation or 'Professional'
     
     # Sanitize star rating
@@ -98,52 +101,47 @@ def generate_review_suggestions(
     }
     rating_guide = star_sentiments.get(star_rating, star_sentiments[5])
 
-    category_instruction = ""
-    if cat_list:
-        clean_cats = ", ".join(cat_list)
-        category_instruction = f" Specifically focus on and mention these business services/categories: '{clean_cats}'."
-
-    topic_instruction = f" Mention aspects related to: '{custom_topic}'." if custom_topic else ""
+    focus_str = custom_topic if custom_topic else (", ".join(cat_list[:2]) if cat_list else "Customer Service")
 
     prompt = (
-        f"You are an assistant creating authentic, punchy Google Review suggestions for a customer to post on Google My Business (GMB) about "
-        f"{employee_name}, who works as a {designation}.\n"
+        f"Generate 3 completely DISTINCT, REALISTIC Google Review suggestions for a customer to leave about {employee_name}, "
+        f"working as a {designation}.\n"
         f"Target Rating: {rating_guide}\n"
-        f"Context / Bio: {bio or 'A dedicated professional delivering top-tier service.'}\n"
-        f"Tone: {tone_guide}.{category_instruction}{topic_instruction}\n\n"
-        f"CRITICAL CONSTRAINT 1: Each 'review' MUST be strictly MAXIMUM 15 WORDS (short, punchy, concise, under 15 words).\n"
-        f"CRITICAL CONSTRAINT 2: Do NOT mention or include the company name '{company_name}' or 'Nexalogic Techno' or any agency name in the review text. Focus solely on {employee_name} and the service provided.\n\n"
-        f"Requirements:\n"
-        f"1. Generate exactly 3 distinct, realistic, high-quality review suggestions matching the {star_rating}-star rating.\n"
-        f"2. Adapt the vocabulary and context precisely to their business field and the selected categories.\n"
-        f"3. Do NOT use overly robotic or marketing-heavy jargon. Make it sound like a real customer.\n"
-        f"4. Return STRICTLY a JSON array of 3 objects, each with:\n"
-        f"   - 'title': Short headline (2 to 5 words)\n"
+        f"Role / Professional Context: {bio or designation}\n"
+        f"Focus Area: {focus_str}\n"
+        f"Tone: {tone_guide}\n\n"
+        f"CRITICAL REQUIREMENTS:\n"
+        f"1. DIVERSITY: Each review MUST take a completely distinct perspective:\n"
+        f"   - Suggestion 1: Focus on speed, prompt communication, and responsiveness.\n"
+        f"   - Suggestion 2: Focus on deep expertise, honest guidance, and quality as a {designation}.\n"
+        f"   - Suggestion 3: Focus on friendly demeanor, customer care, and going above & beyond.\n"
+        f"2. LENGTH: Each 'review' MUST be STRICTLY 10 TO 15 WORDS. Punchy, short, real human speech. Under 15 words.\n"
+        f"3. STRICT CONSTRAINT: NEVER mention 'Nexalogic Techno', 'Nexalogic', or any platform agency name.\n"
+        f"4. Output STRICTLY a JSON array of 3 objects with:\n"
+        f"   - 'title': Short catchy headline (2 to 5 words)\n"
         f"   - 'review': Punchy review text (STRICTLY MAXIMUM 15 WORDS)\n"
         f"   - 'rating': Integer {star_rating}\n"
-        f"   - 'tags': Array of 2-3 short highlight tags (e.g., ['{cat_list[0] if cat_list else 'Great Service'}', '{star_rating} Stars'])\n"
+        f"   - 'tags': Array of 2-3 short highlight tags\n"
     )
 
     if api_key and not api_key.startswith('your_'):
-        models_to_try = [model, 'gemini-3.7-flash', 'gemini-3.8-flash', 'gemini-3.5-flash']
-        # Remove duplicates while preserving order
-        seen = set()
-        unique_models = [m for m in models_to_try if not (m in seen or seen.add(m))]
+        # Prioritize ultra-fast and reliable models with quick 3.5s timeout
+        models_to_try = ['gemini-3.1-flash-lite', 'gemini-flash-lite-latest']
 
-        for mod in unique_models:
+        for mod in models_to_try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/{mod}:generateContent?key={api_key}"
             payload = json.dumps({
                 "contents": [{"parts": [{"text": prompt}]}],
                 "generationConfig": {
                     "responseMimeType": "application/json",
-                    "temperature": 0.7,
+                    "temperature": 0.9,
                     "maxOutputTokens": 2048
                 }
             }).encode('utf-8')
             
             req = urllib.request.Request(url, data=payload, headers={'Content-Type': 'application/json'})
             try:
-                with urllib.request.urlopen(req, timeout=12) as response:
+                with urllib.request.urlopen(req, timeout=3.5) as response:
                     if response.status == 200:
                         raw_data = response.read().decode('utf-8')
                         resp_json = json.loads(raw_data)
@@ -172,7 +170,7 @@ def generate_review_suggestions(
             except Exception as e:
                 logger.warning("Gemini AI API call failed for model %s: %s", mod, e)
 
-    # Fallback to intelligent dynamic templates
+    # Fallback to rich, randomized domain-aware templates
     return {
         "success": True,
         "source": "smart_fallback",
@@ -183,151 +181,236 @@ def generate_review_suggestions(
 
 def generate_fallback_reviews(name, designation, company="", topic="", star_rating=5, categories=None):
     """
-    Provides rich, domain and star-aware fallback reviews in case of API unavailability.
-    All fallback reviews are strictly constrained to maximum 15 words and contain NO company names.
+    Provides rich, domain-aware, and highly randomized fallback reviews.
+    Every generation samples from an extensive pool of short (max 15 words) reviews
+    customized to the employee's role and details.
     """
-    cats = categories or []
-    cat_str = f" for {', '.join(cats)}" if cats else ""
+    first_name = name.split()[0] if name else "Professional"
+    role = designation if designation else "Executive"
+    topic_clean = topic.strip() if topic else ""
+    tag_prefix = (categories[0] if categories else "Top Quality")
+    
     desig_lower = (designation or "").lower()
     
-    # Build domain keyword text
-    is_clothing = any(k in desig_lower for k in ['menswear', 'clothing', 'fashion', 'tailor', 'suit', 'fabric', 'retail', 'apparel'])
-    is_doctor = any(k in desig_lower for k in ['doctor', 'dr', 'physician', 'surgeon', 'cardiologist', 'dentist', 'clinic', 'hospital', 'nurse'])
+    # Identify domain
+    is_sales = any(k in desig_lower for k in ['sales', 'executive', 'business development', 'bd', 'growth', 'consultant', 'account'])
+    is_doctor = any(k in desig_lower for k in ['doctor', 'dr', 'physician', 'surgeon', 'dentist', 'clinic', 'medical', 'nurse'])
+    is_tech = any(k in desig_lower for k in ['developer', 'engineer', 'tech', 'software', 'it', 'coder', 'architect'])
     is_realestate = any(k in desig_lower for k in ['real estate', 'realtor', 'property', 'broker', 'housing', 'builder'])
-    
-    tag_prefix = cats[0] if cats else "Top Service"
+    is_clothing = any(k in desig_lower for k in ['menswear', 'clothing', 'fashion', 'tailor', 'suit', 'fabric', 'apparel'])
+    is_auto = any(k in desig_lower for k in ['service advisor', 'mechanic', 'auto', 'car', 'bike', 'workshop', 'motors'])
 
-    raw_list = []
     if star_rating >= 4:
-        if is_clothing:
-            raw_list = [
+        if is_sales:
+            pool = [
                 {
-                    "title": f"Outstanding quality & perfect fitting{cat_str}",
-                    "review": f"Incredible experience shopping with {name}{cat_str}! Top quality and perfect fitting.",
-                    "rating": star_rating,
-                    "tags": [tag_prefix, f"{star_rating} Stars", "Verified Buyer"]
+                    "title": "Prompt guidance and genuine advice",
+                    "review": f"Very prompt, honest, and professional sales advice from {name}. Made everything seamless and clear.",
+                    "tags": ["Sales Advisory", "Prompt Service", f"{star_rating} Stars"]
                 },
                 {
-                    "title": "Superb collection and great customer service",
-                    "review": f"{name} was super helpful and knowledgeable about current trends{cat_str}. Found exactly what I needed!",
-                    "rating": star_rating,
-                    "tags": ["Great Collection", "Helpful Staff", "5 Stars" if star_rating == 5 else "4 Stars"]
+                    "title": "Truly exceptional customer support",
+                    "review": f"{name} understood our exact requirements and delivered the best solution. Truly pleased!",
+                    "tags": ["Great Listener", "Top Solution", "Recommended"]
                 },
                 {
-                    "title": "Seamless tailoring and fast delivery",
-                    "review": f"Fast turnaround and flawless craftsmanship. {name} delivered outstanding fitting results!",
-                    "rating": star_rating,
-                    "tags": ["Flawless Fitting", "Fast Delivery", "Recommended"]
+                    "title": "Fast, clear and reliable consultation",
+                    "review": f"Quick responses and transparent consultation from {name}. Saved us valuable time and effort.",
+                    "tags": ["Time Saver", "Transparent", f"{star_rating} Stars"]
+                },
+                {
+                    "title": "Goes above and beyond for clients",
+                    "review": f"{first_name} was courteous, patient, and went above and beyond to answer all our questions.",
+                    "tags": ["Helpful Staff", "Dedicated", f"{star_rating} Stars"]
+                },
+                {
+                    "title": "Hassle-free and pleasant experience",
+                    "review": f"Wonderful experience dealing with {name}. Knowledgeable, courteous, and very efficient throughout.",
+                    "tags": ["Hassle Free", "Deep Knowledge", "5 Stars"]
+                },
+                {
+                    "title": "Highly recommended sales professional",
+                    "review": f"Outstanding assistance from {name}! Honest approach and very responsive communication at every step.",
+                    "tags": ["Honest Advice", "Fast Response", "Recommended"]
+                },
+                {
+                    "title": "Smooth coordination and great value",
+                    "review": f"{name} handled our request smoothly with zero delay. Appreciate the high standard of work!",
+                    "tags": ["Smooth Process", "High Standards", f"{star_rating} Stars"]
                 }
             ]
         elif is_doctor:
-            raw_list = [
+            pool = [
                 {
-                    "title": "Exceptional care and true professionalism",
-                    "review": f"Outstanding care by {name}{cat_str}. Extremely compassionate, attentive, and highly skilled!",
-                    "rating": star_rating,
-                    "tags": ["Compassionate Care", "Highly Skilled", "Recommended"]
+                    "title": "Compassionate care and thorough explanation",
+                    "review": f"Outstanding care by {name}. Extremely compassionate, attentive, and explained the diagnosis very clearly.",
+                    "tags": ["Compassionate Care", "Clear Diagnosis", f"{star_rating} Stars"]
                 },
                 {
-                    "title": "Very attentive and knowledgeable doctor",
-                    "review": f"{name} listened patiently and provided clear, effective medical advice. Highly recommended!",
-                    "rating": star_rating,
-                    "tags": ["Attentive Doctor", "Clear Advice", f"{star_rating} Stars"]
+                    "title": "Patience and great clinical expertise",
+                    "review": f"{first_name} listened patiently to all concerns and provided genuine medical guidance. Highly recommended!",
+                    "tags": ["Patient Doctor", "Great Advice", "Recommended"]
                 },
                 {
-                    "title": "Smooth, hygienic and punctual appointment",
-                    "review": f"Punctual, hygienic, and thorough checkup with doctor {name}. Excellent medical care!",
-                    "rating": star_rating,
-                    "tags": ["Punctual", "Thorough Checkup", "Great Staff"]
+                    "title": "Very reassuring and professional consultation",
+                    "review": f"Felt very comfortable and well assisted by {name}. Calm demeanor and prompt attention.",
+                    "tags": ["Calm Demeanor", "Professional Care", f"{star_rating} Stars"]
+                },
+                {
+                    "title": "Dedicated medical guidance",
+                    "review": f"{name} gave precise advice and timely treatment. Truly appreciative of the dedicated care.",
+                    "tags": ["Precise Advice", "Top Care", "5 Stars"]
+                }
+            ]
+        elif is_tech:
+            pool = [
+                {
+                    "title": "Outstanding technical expertise",
+                    "review": f"{name} solved our technical requirements quickly and with remarkable precision. Highly skilled engineer!",
+                    "tags": ["Technical Skills", "Fast Delivery", f"{star_rating} Stars"]
+                },
+                {
+                    "title": "Prompt and clear communication",
+                    "review": f"Great technical guidance and rapid implementation from {name}. Made complex problem-solving look effortless.",
+                    "tags": ["Clear Comm", "Problem Solver", "Recommended"]
+                },
+                {
+                    "title": "Delivered on time with high quality",
+                    "review": f"Working with {first_name} was seamless. High-quality code delivery and exceptional attention to detail.",
+                    "tags": ["High Quality", "Reliable", f"{star_rating} Stars"]
                 }
             ]
         elif is_realestate:
-            raw_list = [
+            pool = [
                 {
-                    "title": "Seamless and transparent property experience",
-                    "review": f"Seamless and honest property deal with {name}{cat_str}. Highly recommended advisor!",
-                    "rating": star_rating,
-                    "tags": ["Transparent Deal", "Market Expert", "Seamless Process"]
+                    "title": "Transparent and honest property guidance",
+                    "review": f"Transparent consultation and smooth documentation support from {name}. Guided us without any pressure.",
+                    "tags": ["Honest Broker", "Smooth Closing", f"{star_rating} Stars"]
                 },
                 {
-                    "title": "Helped us find the perfect match!",
-                    "review": f"{name} understood our exact requirements and found the perfect property!",
-                    "rating": star_rating,
-                    "tags": ["Dedicated Advisor", "Prompt Support", "Highly Recommended"]
+                    "title": "Saved us valuable time",
+                    "review": f"{name} showed verified options matching our exact budget. Very reliable property professional!",
+                    "tags": ["Verified Properties", "Time Saver", "Recommended"]
                 },
                 {
-                    "title": "Professional, reliable and trustworthy",
-                    "review": f"Professional, reliable, and transparent property guidance from {name}. Saved us time!",
-                    "rating": star_rating,
-                    "tags": ["Trustworthy", "Time Saver", f"{star_rating} Stars"]
+                    "title": "Effortless property journey",
+                    "review": f"Very trustworthy and clear communication from {name}. Made our property journey completely hassle-free.",
+                    "tags": ["Trustworthy", "Hassle Free", f"{star_rating} Stars"]
+                }
+            ]
+        elif is_clothing:
+            pool = [
+                {
+                    "title": "Outstanding craftsmanship and fitting",
+                    "review": f"Incredible experience shopping with {name}! Top quality fabric and perfect custom fitting results.",
+                    "tags": ["Custom Fitting", "Top Quality", f"{star_rating} Stars"]
+                },
+                {
+                    "title": "Superb collection and great support",
+                    "review": f"{name} was super helpful and knowledgeable about current trends. Found exactly what I needed!",
+                    "tags": ["Great Collection", "Helpful Staff", "Recommended"]
+                },
+                {
+                    "title": "Fast turnaround and flawless service",
+                    "review": f"Fast delivery and exceptional styling advice from {first_name}. Highly recommend to everyone!",
+                    "tags": ["Fast Delivery", "Styling Advice", f"{star_rating} Stars"]
+                }
+            ]
+        elif is_auto:
+            pool = [
+                {
+                    "title": "Honest vehicle diagnosis and prompt delivery",
+                    "review": f"Prompt vehicle inspection and honest advice from {name}. Service delivered right on time.",
+                    "tags": ["Prompt Service", "Honest Advice", f"{star_rating} Stars"]
+                },
+                {
+                    "title": "Transparent cost and courteous communication",
+                    "review": f"{name} explained all repairs clearly without unnecessary expenses. Great service experience!",
+                    "tags": ["Transparent Cost", "Courteous Staff", "Recommended"]
                 }
             ]
         else:
-            raw_list = [
+            pool = [
                 {
-                    "title": f"Exceptional service and quick response{cat_str}",
-                    "review": f"Wonderful experience with {name}{cat_str}! Prompt, professional, and attentive service throughout.",
-                    "rating": star_rating,
-                    "tags": [tag_prefix, "Top Quality", f"{star_rating} Stars"]
+                    "title": "Prompt, polite and professional service",
+                    "review": f"Wonderful experience with {name}! Prompt, professional, and attentive service throughout our interaction.",
+                    "tags": [tag_prefix, "Prompt Service", f"{star_rating} Stars"]
                 },
                 {
                     "title": "True professional who goes above and beyond",
-                    "review": f"{name} was fantastic, polite, and went above and beyond for us.",
-                    "rating": star_rating,
+                    "review": f"{name} was fantastic, polite, and went above and beyond to ensure complete satisfaction.",
                     "tags": ["Deep Expertise", "Great Support", "Recommended"]
                 },
                 {
                     "title": "Smooth, reliable and pleasant experience",
-                    "review": f"Smooth and hassle-free service from {name}{cat_str}. Highly recommended to everyone!",
-                    "rating": star_rating,
+                    "review": f"Smooth and hassle-free assistance from {name}. Highly recommended to everyone looking for quality!",
                     "tags": ["Reliable Service", "Customer First", f"{star_rating} Stars"]
+                },
+                {
+                    "title": "Clear communication and fast turnaround",
+                    "review": f"Delightful experience working with {first_name}. Quick answers, transparent updates, and genuine dedication.",
+                    "tags": ["Quick Answers", "Dedicated", "Top Quality"]
+                },
+                {
+                    "title": "Top-tier assistance and friendly attitude",
+                    "review": f"{name} made the entire process effortless. Courteous demeanor and great attention to detail.",
+                    "tags": ["Effortless Process", "Courteous", f"{star_rating} Stars"]
                 }
             ]
     elif star_rating == 3:
-        raw_list = [
+        pool = [
             {
-                "title": f"Decent experience with scope for improvement{cat_str}",
-                "review": f"Average experience with {name}{cat_str}. Service was decent, though turnaround was slow.",
-                "rating": 3,
-                "tags": [tag_prefix, "3 Stars", "Constructive Feedback"]
+                "title": "Decent service with room for improvement",
+                "review": f"Average experience with {name}. Service was satisfactory, though turnaround communication could be quicker.",
+                "tags": ["Average Service", "3 Stars", "Feedback"]
             },
             {
-                "title": "Satisfactory service, fair value",
-                "review": f"Satisfactory service from {name}. Met basic expectations with polite staff communication.",
-                "rating": 3,
+                "title": "Satisfactory support, fair value",
+                "review": f"Met basic expectations with polite staff coordination from {first_name}. Decent overall interaction.",
                 "tags": ["Satisfactory", "Fair Experience", "3 Stars"]
             },
             {
-                "title": "Average experience overall",
-                "review": f"Decent overall experience, though minor coordination delays occurred with {name}.",
-                "rating": 3,
-                "tags": ["Average Service", "Room to Grow", "3 Stars"]
+                "title": "Moderate experience overall",
+                "review": f"Service from {name} was acceptable, though minor coordination delays occurred during the process.",
+                "tags": ["Moderate Service", "Room to Grow", "3 Stars"]
+            },
+            {
+                "title": "Polite staff with minor delays",
+                "review": f"{name} was polite and answered queries, but response times could definitely be improved.",
+                "tags": ["Polite Staff", "Minor Delays", "3 Stars"]
             }
         ]
     else:
-        raw_list = [
+        pool = [
             {
-                "title": f"Need improvement in communication and service{cat_str}",
-                "review": f"My experience with {name}{cat_str} fell short due to communication delays.",
-                "rating": star_rating,
-                "tags": [tag_prefix, f"{star_rating} Star", "Feedback"]
+                "title": "Needs improvement in communication",
+                "review": f"My experience with {name} fell short due to communication delays and slower turnaround.",
+                "tags": [f"{star_rating} Star", "Feedback", "Customer Note"]
             },
             {
                 "title": "Service was below expectations",
-                "review": f"Service was below expectations. Encountered unexpected delays during our interaction.",
-                "rating": star_rating,
+                "review": f"Encountered unexpected delays during interaction with {name}. Needs better proactive coordination.",
                 "tags": ["Customer Feedback", f"{star_rating} Star", "Service Note"]
             },
             {
-                "title": "Disappointed with the turnaround time",
-                "review": f"Disappointed with slow turnaround from {name}. Needs better coordination and responsiveness.",
-                "rating": star_rating,
+                "title": "Disappointed with turnaround time",
+                "review": f"Disappointed with slow turnaround from {first_name}. Requires better responsiveness to client queries.",
                 "tags": ["Slow Response", "Feedback", f"{star_rating} Star"]
             }
         ]
 
-    for item in raw_list:
+    # Dynamically select 3 different reviews from the pool
+    sample_count = min(3, len(pool))
+    selected = random.sample(pool, sample_count)
+    
+    # If pool had fewer than 3, duplicate or pad safely
+    while len(selected) < 3 and pool:
+        selected.append(pool[len(selected) % len(pool)])
+
+    for item in selected:
         clean_text = sanitize_review_text(item["review"], company)
         item["review"] = limit_to_max_words(clean_text, max_words=15)
         item["title"] = sanitize_review_text(item["title"], company)
-    return raw_list
+        item["rating"] = star_rating
+
+    return selected

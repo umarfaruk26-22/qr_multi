@@ -165,14 +165,17 @@
           </div>
           
           <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-            <a href="{{ url_for('qr.download_qr', employee_id=employee.id, file_format='png') }}" class="btn btn-primary btn-sm">
-              ⬇ Download PNG
+            <a href="{{ url_for('qr.download_qr', employee_id=employee.id, file_format='jpg') }}" class="btn btn-primary btn-sm" title="Download High-Res JPEG Card with Name & Details">
+              🖼️ Download JPEG Card
             </a>
-            <a href="{{ url_for('qr.download_qr', employee_id=employee.id, file_format='svg') }}" class="btn btn-secondary btn-sm">
-              ⬇ Download SVG
+            <a href="{{ url_for('qr.download_qr', employee_id=employee.id, file_format='branded') }}" class="btn btn-secondary btn-sm" title="Download PNG Card with Details">
+              🎨 Download PNG Card
             </a>
-            <a href="{{ url_for('qr.download_qr', employee_id=employee.id, file_format='branded') }}" class="btn btn-outline btn-sm">
-              🎨 Download Branded Card
+            <a href="{{ url_for('qr.download_qr', employee_id=employee.id, file_format='png') }}" class="btn btn-outline btn-sm" title="Download Plain QR">
+              ⬇ Plain QR
+            </a>
+            <a href="{{ url_for('qr.download_qr', employee_id=employee.id, file_format='svg') }}" class="btn btn-outline btn-sm" title="Download Vector SVG">
+              ⬇ Vector SVG
             </a>
           </div>
         </div>

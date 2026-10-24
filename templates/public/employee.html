@@ -22,7 +22,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}?v=20261024_3">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}?v=20261024_4">
 {% endblock %}
 
 {% block body_class %}public-body-fullpage{% endblock %}
@@ -421,13 +421,13 @@
               </p>
 
               <div class="qr-station-actions">
-                <a href="/{{ employee.png_path }}" download="{{ employee.slug }}-qr.png" class="btn-qr-download">
+                <a href="{{ url_for('qr.public_download_qr', slug=employee.slug, file_format='jpg') }}" download="{{ employee.slug }}-card.jpg" class="btn-qr-download" title="Download High-Res Profile Card (JPEG)">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                    <polyline points="7 10 12 15 17 10"></polyline>
-                    <line x1="12" y1="15" x2="12" y2="3"></line>
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                    <polyline points="21 15 16 10 5 21"></polyline>
                   </svg>
-                  <span>Download QR Image</span>
+                  <span>Download Card (JPEG)</span>
                 </a>
 
                 <button type="button" id="btn-copy-link-qr" class="btn-qr-copy">
@@ -437,6 +437,12 @@
                   </svg>
                   <span>Copy Profile Link</span>
                 </button>
+              </div>
+              <div style="margin-top: 10px; display: flex; gap: 10px; align-items: center; font-size: 0.78rem; flex-wrap: wrap;">
+                <span style="color: #64748b;">More formats:</span>
+                <a href="{{ url_for('qr.public_download_qr', slug=employee.slug, file_format='png') }}" download="{{ employee.slug }}-card.png" style="color: #818cf8; text-decoration: none; font-weight: 500;" title="Download PNG card">Card (PNG)</a>
+                <span style="color: #334155;">•</span>
+                <a href="{{ url_for('qr.public_download_qr', slug=employee.slug, file_format='raw') }}" download="{{ employee.slug }}-qr.png" style="color: #94a3b8; text-decoration: none;" title="Download plain QR square for print">QR Only (PNG)</a>
               </div>
             </div>
           </div>
@@ -758,5 +764,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/public.js') }}?v=20261024_3"></script>
+<script src="{{ url_for('static', filename='js/public.js') }}?v=20261024_4"></script>
 {% endblock %}
