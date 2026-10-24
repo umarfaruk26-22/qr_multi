@@ -230,16 +230,17 @@
                   <span class="gold-star-rating">★★★★★</span>
                   <span class="ai-powered-pill">⚡ Gemini AI</span>
                 </div>
-                <h2 class="hero-card-title">Leave a 5-Star Review</h2>
-                <p class="hero-card-desc">Generate personalized 5-star review suggestions with AI in 1-click.</p>
+                <h2 class="hero-card-title">Leave a 5-Star Google Review</h2>
+                <p class="hero-card-desc">Write a review directly on Google or generate AI suggestions in 1-click.</p>
               </div>
             </div>
 
             <div class="hero-card-action-group">
+              <a href="{{ employee.google_review_url }}" target="_blank" rel="noopener noreferrer" class="btn-hero-action google-direct-btn" id="btn-direct-google-review" title="Write Google Review Directly" data-track-event="google_review_click">
+                <span>Write Review</span>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+              </a>
               <button type="button" id="btn-open-ai-review" class="btn-hero-action google-action-btn btn-open-ai-modal" title="Use AI Review Assistant">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
-                </svg>
                 <span>⚡ AI Writer</span>
               </button>
             </div>
