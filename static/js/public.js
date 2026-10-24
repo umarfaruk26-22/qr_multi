@@ -390,6 +390,18 @@ document.addEventListener('DOMContentLoaded', () => {
     return empty ? `${filled} ${empty}` : filled;
   }
 
+  // Helper to sanitize review text and eliminate unwanted agency/platform names
+  const cleanReviewText = (text) => {
+    if (!text) return '';
+    return String(text)
+      .replace(/\b(?:at|with|from|by)\s+Nexalogic\s+Techno[!?,.]*\b/gi, '')
+      .replace(/\bNexalogic\s+Techno[!?,.]*\b/gi, '')
+      .replace(/\bNexalogic[!?,.]*\b/gi, '')
+      .replace(/\s+/g, ' ')
+      .replace(/\s+([!?,.])/g, '$1')
+      .trim();
+  };
+
   // Render Review Cards
   function renderReviewCards(reviews, starRating = 5) {
     if (!reviewsList) return;
@@ -401,9 +413,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const card = document.createElement('div');
       card.className = `ai-review-card ${index === 0 ? 'selected' : ''}`;
       
+      const cleanReview = cleanReviewText(item.review || '');
+      const cleanTitle = cleanReviewText(item.title || 'Recommended Experience') || 'Recommended Experience';
+      
       const tagsList = item.tags || [`${starRating} Stars`];
       const tagsHtml = tagsList
-        .map((tag) => `<span class="ai-card-tag">${escapeHtml(tag)}</span>`)
+        .map((tag) => `<span class="ai-card-tag">${escapeHtml(cleanReviewText(tag))}</span>`)
         .join('');
 
       card.innerHTML = `
@@ -411,8 +426,8 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="ai-card-stars">${starDisplay}</div>
           ${index === 0 ? '<span class="ai-card-selected-badge">✓ Selected</span>' : ''}
         </div>
-        <div class="ai-card-title">${escapeHtml(item.title || 'Recommended Experience')}</div>
-        <div class="ai-card-text">${escapeHtml(item.review || '')}</div>
+        <div class="ai-card-title">${escapeHtml(cleanTitle)}</div>
+        <div class="ai-card-text">${escapeHtml(cleanReview)}</div>
         <div class="ai-card-tags-row">${tagsHtml}</div>
       `;
 
@@ -433,7 +448,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Populate textarea
         if (selectedTextarea) {
-          selectedTextarea.value = item.review || '';
+          selectedTextarea.value = cleanReview;
           if (charCounter) charCounter.textContent = selectedTextarea.value.length;
           selectedTextarea.focus();
         }
@@ -444,7 +459,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Populate first card by default
     if (selectedTextarea && reviews[0]) {
-      selectedTextarea.value = reviews[0].review || '';
+      selectedTextarea.value = cleanReviewText(reviews[0].review || '');
       if (charCounter) charCounter.textContent = selectedTextarea.value.length;
     }
   }

@@ -1,10 +1,36 @@
 import json
 import logging
+import re
 import urllib.request
 import urllib.error
 from config import Config
 
 logger = logging.getLogger(__name__)
+
+def sanitize_review_text(text, company_name=None):
+    """
+    Strips any unwanted platform or agency company names like 'Nexalogic Techno'
+    or 'at Nexalogic Techno' from review text.
+    """
+    if not text:
+        return ""
+    targets = ['Nexalogic Techno', 'NexalogicTechno', 'Nexalogic']
+    if company_name and isinstance(company_name, str) and company_name.strip():
+        c_clean = company_name.strip()
+        if c_clean.lower() not in [t.lower() for t in targets]:
+            targets.append(c_clean)
+            
+    cleaned = str(text)
+    for t in targets:
+        # Match 'at/with/from/by Nexalogic Techno' or just 'Nexalogic Techno'
+        cleaned = re.sub(rf'\b(?:at|with|from|by)\s+{re.escape(t)}[!?,.]*\b', '', cleaned, flags=re.IGNORECASE)
+        cleaned = re.sub(rf'\b{re.escape(t)}[!?,.]*\b', '', cleaned, flags=re.IGNORECASE)
+    
+    # Remove awkward double punctuation or spaces
+    cleaned = re.sub(r'\s+', ' ', cleaned)
+    cleaned = re.sub(r'\s+([!?,.])', r'\1', cleaned)
+    return cleaned.strip()
+
 
 def limit_to_max_words(text, max_words=15):
     """Ensures text strictly has at most max_words words."""
@@ -30,6 +56,7 @@ def generate_review_suggestions(
     Generates 3 context-aware Google Review suggestions using Gemini AI API
     tailored to specific star ratings (1 to 5) and business categories/services.
     STRICT CONSTRAINT: Maximum 15 words per review suggestion.
+    NO MENTION OF NEXALOGIC TECHNO OR PLATFORM COMPANY NAME.
     Falls back gracefully to intelligent domain-tailored templates if API is unreachable.
     """
     api_key = Config.GEMINI_API_KEY
@@ -37,7 +64,6 @@ def generate_review_suggestions(
     
     employee_name = employee_name or 'the team member'
     designation = designation or 'Professional'
-    company_name = company_name or 'the company'
     
     # Sanitize star rating
     try:
@@ -81,11 +107,12 @@ def generate_review_suggestions(
 
     prompt = (
         f"You are an assistant creating authentic, punchy Google Review suggestions for a customer to post on Google My Business (GMB) about "
-        f"{employee_name}, who works as a {designation} at {company_name}.\n"
+        f"{employee_name}, who works as a {designation}.\n"
         f"Target Rating: {rating_guide}\n"
         f"Context / Bio: {bio or 'A dedicated professional delivering top-tier service.'}\n"
         f"Tone: {tone_guide}.{category_instruction}{topic_instruction}\n\n"
-        f"CRITICAL CONSTRAINT: Each 'review' MUST be strictly MAXIMUM 15 WORDS (short, punchy, concise, under 15 words).\n\n"
+        f"CRITICAL CONSTRAINT 1: Each 'review' MUST be strictly MAXIMUM 15 WORDS (short, punchy, concise, under 15 words).\n"
+        f"CRITICAL CONSTRAINT 2: Do NOT mention or include the company name '{company_name}' or 'Nexalogic Techno' or any agency name in the review text. Focus solely on {employee_name} and the service provided.\n\n"
         f"Requirements:\n"
         f"1. Generate exactly 3 distinct, realistic, high-quality review suggestions matching the {star_rating}-star rating.\n"
         f"2. Adapt the vocabulary and context precisely to their business field and the selected categories.\n"
@@ -126,9 +153,11 @@ def generate_review_suggestions(
                             sanitized = []
                             for item in parsed_reviews[:3]:
                                 raw_review = str(item.get("review", "")).strip()
-                                trimmed_review = limit_to_max_words(raw_review, max_words=15)
+                                cleaned_review = sanitize_review_text(raw_review, company_name)
+                                trimmed_review = limit_to_max_words(cleaned_review, max_words=15)
+                                sanitized_title = sanitize_review_text(str(item.get("title", "Recommended Experience")).strip(), company_name)
                                 sanitized.append({
-                                    "title": str(item.get("title", "Recommended Experience")).strip(),
+                                    "title": sanitized_title or "Recommended Experience",
                                     "review": trimmed_review,
                                     "rating": star_rating,
                                     "tags": item.get("tags", [f"{star_rating} Stars"]) if isinstance(item.get("tags"), list) else [f"{star_rating} Stars"]
@@ -152,10 +181,10 @@ def generate_review_suggestions(
     }
 
 
-def generate_fallback_reviews(name, designation, company, topic="", star_rating=5, categories=None):
+def generate_fallback_reviews(name, designation, company="", topic="", star_rating=5, categories=None):
     """
     Provides rich, domain and star-aware fallback reviews in case of API unavailability.
-    All fallback reviews are strictly constrained to maximum 15 words.
+    All fallback reviews are strictly constrained to maximum 15 words and contain NO company names.
     """
     cats = categories or []
     cat_str = f" for {', '.join(cats)}" if cats else ""
@@ -174,7 +203,7 @@ def generate_fallback_reviews(name, designation, company, topic="", star_rating=
             raw_list = [
                 {
                     "title": f"Outstanding quality & perfect fitting{cat_str}",
-                    "review": f"Incredible experience shopping with {name} at {company}{cat_str}! Top quality and perfect fitting.",
+                    "review": f"Incredible experience shopping with {name}{cat_str}! Top quality and perfect fitting.",
                     "rating": star_rating,
                     "tags": [tag_prefix, f"{star_rating} Stars", "Verified Buyer"]
                 },
@@ -186,7 +215,7 @@ def generate_fallback_reviews(name, designation, company, topic="", star_rating=
                 },
                 {
                     "title": "Seamless tailoring and fast delivery",
-                    "review": f"Fast turnaround and flawless craftsmanship at {company}. {name} delivered outstanding fitting results!",
+                    "review": f"Fast turnaround and flawless craftsmanship. {name} delivered outstanding fitting results!",
                     "rating": star_rating,
                     "tags": ["Flawless Fitting", "Fast Delivery", "Recommended"]
                 }
@@ -195,19 +224,19 @@ def generate_fallback_reviews(name, designation, company, topic="", star_rating=
             raw_list = [
                 {
                     "title": "Exceptional care and true professionalism",
-                    "review": f"Outstanding care by {name} at {company}{cat_str}. Extremely compassionate, attentive, and highly skilled!",
+                    "review": f"Outstanding care by {name}{cat_str}. Extremely compassionate, attentive, and highly skilled!",
                     "rating": star_rating,
                     "tags": ["Compassionate Care", "Highly Skilled", "Recommended"]
                 },
                 {
                     "title": "Very attentive and knowledgeable doctor",
-                    "review": f"{name} listened patiently and provided clear, effective medical advice at {company}. Highly recommended!",
+                    "review": f"{name} listened patiently and provided clear, effective medical advice. Highly recommended!",
                     "rating": star_rating,
                     "tags": ["Attentive Doctor", "Clear Advice", f"{star_rating} Stars"]
                 },
                 {
                     "title": "Smooth, hygienic and punctual appointment",
-                    "review": f"Punctual, hygienic, and thorough checkup with doctor {name} at {company}. Excellent medical care!",
+                    "review": f"Punctual, hygienic, and thorough checkup with doctor {name}. Excellent medical care!",
                     "rating": star_rating,
                     "tags": ["Punctual", "Thorough Checkup", "Great Staff"]
                 }
@@ -216,19 +245,19 @@ def generate_fallback_reviews(name, designation, company, topic="", star_rating=
             raw_list = [
                 {
                     "title": "Seamless and transparent property experience",
-                    "review": f"Seamless and honest property deal with {name} at {company}{cat_str}. Highly recommended advisor!",
+                    "review": f"Seamless and honest property deal with {name}{cat_str}. Highly recommended advisor!",
                     "rating": star_rating,
                     "tags": ["Transparent Deal", "Market Expert", "Seamless Process"]
                 },
                 {
                     "title": "Helped us find the perfect match!",
-                    "review": f"{name} understood our exact requirements and found the perfect property at {company}!",
+                    "review": f"{name} understood our exact requirements and found the perfect property!",
                     "rating": star_rating,
                     "tags": ["Dedicated Advisor", "Prompt Support", "Highly Recommended"]
                 },
                 {
                     "title": "Professional, reliable and trustworthy",
-                    "review": f"Professional, reliable, and transparent property guidance from {name} at {company}. Saved us time!",
+                    "review": f"Professional, reliable, and transparent property guidance from {name}. Saved us time!",
                     "rating": star_rating,
                     "tags": ["Trustworthy", "Time Saver", f"{star_rating} Stars"]
                 }
@@ -237,19 +266,19 @@ def generate_fallback_reviews(name, designation, company, topic="", star_rating=
             raw_list = [
                 {
                     "title": f"Exceptional service and quick response{cat_str}",
-                    "review": f"Wonderful experience with {name} at {company}{cat_str}! Prompt, professional, and attentive service throughout.",
+                    "review": f"Wonderful experience with {name}{cat_str}! Prompt, professional, and attentive service throughout.",
                     "rating": star_rating,
                     "tags": [tag_prefix, "Top Quality", f"{star_rating} Stars"]
                 },
                 {
                     "title": "True professional who goes above and beyond",
-                    "review": f"{name} was fantastic, polite, and went above and beyond for us at {company}.",
+                    "review": f"{name} was fantastic, polite, and went above and beyond for us.",
                     "rating": star_rating,
                     "tags": ["Deep Expertise", "Great Support", "Recommended"]
                 },
                 {
                     "title": "Smooth, reliable and pleasant experience",
-                    "review": f"Smooth and hassle-free service from {name} at {company}{cat_str}. Highly recommended to everyone!",
+                    "review": f"Smooth and hassle-free service from {name}{cat_str}. Highly recommended to everyone!",
                     "rating": star_rating,
                     "tags": ["Reliable Service", "Customer First", f"{star_rating} Stars"]
                 }
@@ -258,19 +287,19 @@ def generate_fallback_reviews(name, designation, company, topic="", star_rating=
         raw_list = [
             {
                 "title": f"Decent experience with scope for improvement{cat_str}",
-                "review": f"Average experience with {name} at {company}{cat_str}. Service was decent, though turnaround was slow.",
+                "review": f"Average experience with {name}{cat_str}. Service was decent, though turnaround was slow.",
                 "rating": 3,
                 "tags": [tag_prefix, "3 Stars", "Constructive Feedback"]
             },
             {
                 "title": "Satisfactory service, fair value",
-                "review": f"Satisfactory service from {name} at {company}. Met basic expectations with polite staff communication.",
+                "review": f"Satisfactory service from {name}. Met basic expectations with polite staff communication.",
                 "rating": 3,
                 "tags": ["Satisfactory", "Fair Experience", "3 Stars"]
             },
             {
                 "title": "Average experience overall",
-                "review": f"Decent overall experience at {company}, though minor coordination delays occurred with {name}.",
+                "review": f"Decent overall experience, though minor coordination delays occurred with {name}.",
                 "rating": 3,
                 "tags": ["Average Service", "Room to Grow", "3 Stars"]
             }
@@ -279,25 +308,26 @@ def generate_fallback_reviews(name, designation, company, topic="", star_rating=
         raw_list = [
             {
                 "title": f"Need improvement in communication and service{cat_str}",
-                "review": f"My experience with {name} at {company}{cat_str} fell short due to communication delays.",
+                "review": f"My experience with {name}{cat_str} fell short due to communication delays.",
                 "rating": star_rating,
                 "tags": [tag_prefix, f"{star_rating} Star", "Feedback"]
             },
             {
                 "title": "Service was below expectations",
-                "review": f"Service was below expectations at {company}. Encountered unexpected delays during our interaction.",
+                "review": f"Service was below expectations. Encountered unexpected delays during our interaction.",
                 "rating": star_rating,
                 "tags": ["Customer Feedback", f"{star_rating} Star", "Service Note"]
             },
             {
                 "title": "Disappointed with the turnaround time",
-                "review": f"Disappointed with slow turnaround from {name} at {company}. Needs better coordination and responsiveness.",
+                "review": f"Disappointed with slow turnaround from {name}. Needs better coordination and responsiveness.",
                 "rating": star_rating,
                 "tags": ["Slow Response", "Feedback", f"{star_rating} Star"]
             }
         ]
 
     for item in raw_list:
-        item["review"] = limit_to_max_words(item["review"], max_words=15)
+        clean_text = sanitize_review_text(item["review"], company)
+        item["review"] = limit_to_max_words(clean_text, max_words=15)
+        item["title"] = sanitize_review_text(item["title"], company)
     return raw_list
-

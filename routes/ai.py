@@ -35,7 +35,8 @@ def suggest_reviews():
         return jsonify({'success': False, 'message': 'Employee profile not found or inactive'}), 404
         
     settings = get_company_settings()
-    company_name = settings.get('company_name', 'Enterprise')
+    raw_company = settings.get('company_name', '')
+    company_name = '' if raw_company.strip().lower() in ('nexalogic techno', 'nexalogic', 'enterprise') else raw_company
     
     employee_name = f"{employee.get('first_name', '')} {employee.get('last_name', '')}".strip()
     designation = employee.get('designation', '')
