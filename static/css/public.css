@@ -2050,10 +2050,11 @@ button.social-channel-card {
   /* Standout Full-Width 5-Star Google Rating Banner on Mobile */
   .review-hero-card {
     display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
     width: 100% !important;
-    padding: 13px 14px !important;
+    padding: 12px 14px !important;
     border-radius: 18px !important;
     background: linear-gradient(135deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98)) !important;
     border: 1.5px solid rgba(251, 188, 5, 0.45) !important;
@@ -2066,14 +2067,14 @@ button.social-channel-card {
     display: flex !important;
     align-items: center !important;
     gap: 12px !important;
-    width: 100% !important;
+    flex: 1 !important;
     min-width: 0 !important;
   }
 
   .review-hero-card .hero-icon-wrapper {
     width: 48px !important;
     height: 48px !important;
-    border-radius: 14px !important;
+    border-radius: 13px !important;
     flex-shrink: 0 !important;
     background: #ffffff !important;
     box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35) !important;
@@ -2102,13 +2103,13 @@ button.social-channel-card {
 
   .review-hero-card .hero-card-tag {
     font-size: 0.65rem !important;
-    padding: 1px 6px !important;
+    padding: 2px 7px !important;
     white-space: nowrap !important;
     flex-shrink: 0 !important;
   }
 
   .review-hero-card .gold-star-rating {
-    font-size: 0.85rem !important;
+    font-size: 0.88rem !important;
     letter-spacing: 1.5px !important;
     white-space: nowrap !important;
     display: inline-block !important;
@@ -2117,10 +2118,7 @@ button.social-channel-card {
   }
 
   .review-hero-card .ai-powered-pill {
-    font-size: 0.65rem !important;
-    padding: 1px 6px !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
+    display: none !important;
   }
 
   .review-hero-card .hero-card-title {
@@ -2131,7 +2129,6 @@ button.social-channel-card {
     margin: 0 !important;
     white-space: normal !important;
     overflow: visible !important;
-    text-overflow: clip !important;
   }
 
   .review-hero-card .hero-card-desc {
@@ -2139,46 +2136,31 @@ button.social-channel-card {
   }
 
   .review-hero-card .hero-card-action-group {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
-    width: 100% !important;
-    margin-top: 2px !important;
-  }
-
-  .review-hero-card .google-direct-btn,
-  .review-hero-card .google-action-btn {
-    padding: 9px 8px !important;
-    font-size: 0.78rem !important;
-    font-weight: 700 !important;
-    border-radius: 11px !important;
-    width: 100% !important;
-    justify-content: center !important;
-    white-space: nowrap !important;
-    display: inline-flex !important;
+    display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
-    box-sizing: border-box !important;
-  }
-
-  .review-hero-card .google-direct-btn {
-    background: #4285f4 !important;
-    color: #ffffff !important;
-    border: none !important;
-    box-shadow: 0 4px 12px rgba(66, 133, 244, 0.4) !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
   }
 
   .review-hero-card .google-action-btn {
     background: linear-gradient(135deg, #4f46e5 0%, #2563eb 50%, #06b6d4 100%) !important;
     color: #ffffff !important;
     border: 1px solid rgba(255, 255, 255, 0.25) !important;
-    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4) !important;
+    box-shadow: 0 4px 16px rgba(79, 70, 229, 0.45) !important;
+    padding: 9px 14px !important;
+    font-size: 0.80rem !important;
+    font-weight: 700 !important;
+    border-radius: 11px !important;
+    white-space: nowrap !important;
+    gap: 6px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    cursor: pointer !important;
   }
 
-  .review-hero-card .google-direct-btn svg,
   .review-hero-card .google-action-btn svg {
-    width: 13px !important;
-    height: 13px !important;
+    width: 14px !important;
+    height: 14px !important;
   }
 
   /* 3x3 Unified App Launcher Matrix for Mobile */
@@ -2552,12 +2534,13 @@ button.social-channel-card {
     height: 12px;
   }
 
-  /* Compact & Well-Proportioned Google Review Banner for <= 480px */
+  /* Compact & Well-Proportioned Google Review Card for <= 480px */
   .review-hero-card {
     display: flex !important;
-    flex-direction: column !important;
-    align-items: stretch !important;
-    padding: 12px 12px !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 11px 12px !important;
     border-radius: 16px !important;
     gap: 10px !important;
   }
@@ -2566,7 +2549,8 @@ button.social-channel-card {
     display: flex !important;
     align-items: center !important;
     gap: 10px !important;
-    width: 100% !important;
+    flex: 1 !important;
+    min-width: 0 !important;
   }
 
   .review-hero-card .hero-icon-wrapper {
@@ -2574,6 +2558,10 @@ button.social-channel-card {
     height: 44px !important;
     border-radius: 12px !important;
     flex-shrink: 0 !important;
+    background: #ffffff !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   .review-hero-card .hero-icon-wrapper svg {
@@ -2603,21 +2591,19 @@ button.social-channel-card {
 
   .review-hero-card .gold-star-rating {
     font-size: 0.84rem !important;
-    letter-spacing: 1.5px !important;
+    letter-spacing: 1.2px !important;
     white-space: nowrap !important;
     flex-shrink: 0 !important;
     color: #fbbc05 !important;
+    display: inline-block !important;
   }
 
   .review-hero-card .ai-powered-pill {
-    font-size: 0.65rem !important;
-    padding: 1px 6px !important;
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
+    display: none !important;
   }
 
   .review-hero-card .hero-card-title {
-    font-size: 0.90rem !important;
+    font-size: 0.88rem !important;
     font-weight: 700 !important;
     line-height: 1.25 !important;
     color: #ffffff !important;
@@ -2626,25 +2612,30 @@ button.social-channel-card {
   }
 
   .review-hero-card .hero-card-action-group {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 8px !important;
-    width: 100% !important;
-    margin-top: 2px !important;
+    display: flex !important;
+    align-items: center !important;
+    flex-shrink: 0 !important;
+    margin: 0 !important;
   }
 
-  .review-hero-card .google-direct-btn,
   .review-hero-card .google-action-btn {
-    padding: 9px 8px !important;
+    padding: 8px 12px !important;
     font-size: 0.78rem !important;
     font-weight: 700 !important;
     border-radius: 10px !important;
-    width: 100% !important;
-    justify-content: center !important;
     white-space: nowrap !important;
+    gap: 5px !important;
     display: inline-flex !important;
     align-items: center !important;
-    gap: 5px !important;
+    background: linear-gradient(135deg, #4f46e5 0%, #2563eb 50%, #06b6d4 100%) !important;
+    color: #ffffff !important;
+    border: 1px solid rgba(255, 255, 255, 0.25) !important;
+    box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4) !important;
+  }
+
+  .review-hero-card .google-action-btn svg {
+    width: 13px !important;
+    height: 13px !important;
   }
 
   /* 3x3 App Launcher Grid for 480px */
