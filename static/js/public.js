@@ -322,32 +322,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (modalReviewLoading) modalReviewLoading.style.display = 'none';
     if (modalReviewTextWrap) modalReviewTextWrap.style.display = 'block';
     if (modalSingleReviewText) modalSingleReviewText.textContent = text;
-
-    // Start auto-redirect countdown
-    startRedirectCountdown();
   }
 
-  function startRedirectCountdown() {
-    clearInterval(redirectCountdownTimer);
-    let secondsLeft = 3;
-    if (modalCountdown) modalCountdown.style.display = 'block';
-    if (countdownSeconds) countdownSeconds.textContent = secondsLeft;
-
-    redirectCountdownTimer = setInterval(() => {
-      secondsLeft -= 1;
-      if (countdownSeconds) countdownSeconds.textContent = secondsLeft;
-
-      if (secondsLeft <= 0) {
-        clearInterval(redirectCountdownTimer);
-        // Execute copy and redirect automatically!
-        executeCopyAndRedirect();
-      }
-    }, 1000);
-  }
-
-  // Copy Review and Direct Redirect to Google Target Link
+  // Copy Review and Direct Redirect to Google Target Link (ONLY triggered on user click)
   async function executeCopyAndRedirect() {
-    clearInterval(redirectCountdownTimer);
     if (!currentGeneratedReview) {
       currentGeneratedReview = modalSingleReviewText?.textContent.trim() || `Great service from ${employeeName}!`;
     }
@@ -363,13 +341,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     logEvent('positive_review_copied_gmb_redirect');
 
-    // 3. Immediately redirect to target Google Review link
+    // 3. Immediately redirect to target Google Review link on user action
     setTimeout(() => {
       window.location.href = targetGmbUrl;
-    }, 600);
+    }, 450);
   }
 
-  // Button Click: COPY REVIEW & GO TO GOOGLE
+  // Button Click: ONLY trigger redirect when user clicks "COPY REVIEW"
   if (btnCopyReviewDirect) {
     btnCopyReviewDirect.addEventListener('click', (e) => {
       e.preventDefault();

@@ -22,7 +22,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}?v=20261027_1">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}?v=20261027_2">
 {% endblock %}
 
 {% block body_class %}public-body-wyddigi{% endblock %}
@@ -427,7 +427,7 @@
           </div>
         </div>
 
-        <!-- High-Impact Single CTA: COPY REVIEW & GO TO GOOGLE -->
+        <!-- High-Impact Single CTA: COPY REVIEW & GO TO GOOGLE (Redirects only on user click) -->
         <div class="modal-actions-wrapper">
           <button type="button" id="btn-copy-review-direct" class="btn-wyddigi-copy-review">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
@@ -436,11 +436,6 @@
             </svg>
             <span id="btn-copy-text-label">COPY REVIEW</span>
           </button>
-
-          <!-- Auto-Redirect Countdown Hint -->
-          <div id="modal-redirect-countdown" class="redirect-countdown-text">
-            <span>Opening Google Review in <strong id="countdown-seconds">3</strong>s...</span>
-          </div>
 
           <!-- Regenerate / Try Another Option -->
           <button type="button" id="btn-try-another-review" class="btn-try-another">
@@ -511,5 +506,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/public.js') }}?v=20261027_1"></script>
+<script src="{{ url_for('static', filename='js/public.js') }}?v=20261027_2"></script>
 {% endblock %}
