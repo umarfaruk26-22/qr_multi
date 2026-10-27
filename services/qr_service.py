@@ -1,4 +1,5 @@
 import os
+import math
 import qrcode
 import qrcode.image.svg
 from PIL import Image, ImageDraw, ImageFont
@@ -95,19 +96,43 @@ def generate_qr_code(slug, employee_id=None, employee_name=None, designation=Non
     qr_img.save(str(png_full_path), format='PNG')
 
     # 2. Generate SVG
-    svg_factory = qrcode.image.svg.SvgPathImage
-    svg_qr = qrcode.QRCode(
-        version=None,
-        error_correction=qrcode.constants.ERROR_CORRECT_M,
-        box_size=10,
-        border=2,
-        image_factory=svg_factory
-    )
-    svg_qr.add_data(target_url)
-    svg_qr.make(fit=True)
-    svg_img = svg_qr.make_image()
+    try:
+        svg_factory = qrcode.image.svg.SvgPathFillImage
+        svg_qr = qrcode.QRCode(
+            version=None,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=10,
+            border=2,
+            image_factory=svg_factory
+        )
+        svg_qr.add_data(target_url)
+        svg_qr.make(fit=True)
+        svg_img = svg_qr.make_image(fill_color="#0f172a")
+    except Exception:
+        svg_factory = qrcode.image.svg.SvgPathImage
+        svg_qr = qrcode.QRCode(
+            version=None,
+            error_correction=qrcode.constants.ERROR_CORRECT_M,
+            box_size=10,
+            border=2,
+            image_factory=svg_factory
+        )
+        svg_qr.add_data(target_url)
+        svg_qr.make(fit=True)
+        svg_img = svg_qr.make_image()
+
     with open(str(svg_full_path), 'wb') as f:
         svg_img.save(f)
+
+    try:
+        with open(str(svg_full_path), 'r', encoding='utf-8') as f:
+            svg_content = f.read()
+        if 'fill="#000000"' in svg_content:
+            svg_content = svg_content.replace('fill="#000000"', 'fill="#0f172a"')
+            with open(str(svg_full_path), 'w', encoding='utf-8') as f:
+                f.write(svg_content)
+    except Exception:
+        pass
 
     # 3. Generate Branded High-Definition Photo Cards (JPEG & PNG)
     display_name = employee_name if employee_name else slug.capitalize()
@@ -161,6 +186,18 @@ def generate_qr_code(slug, employee_id=None, employee_name=None, designation=Non
     }
 
 
+def _draw_star(draw, cx, cy, size=16, fill=(245, 158, 11)):
+    """Draw a clean, crisp 5-pointed vector star polygon."""
+    points = []
+    for i in range(10):
+        angle = i * (math.pi / 5) - (math.pi / 2)
+        r = size if i % 2 == 0 else (size * 0.42)
+        x = cx + r * math.cos(angle)
+        y = cy + r * math.sin(angle)
+        points.append((x, y))
+    draw.polygon(points, fill=fill)
+
+
 def _create_branded_qr_image(
     qr_image,
     output_png_path,
@@ -172,121 +209,148 @@ def _create_branded_qr_image(
     company_logo_path=None
 ):
     """
-    Renders an ultra-sharp, high-resolution 1080x1440 corporate digital badge/card.
-    Contains full employee details: Name, Designation, Company, Verified Badge, and QR Code.
+    Renders an ultra-sharp, high-resolution 1080x1440 digital card matching the website's clean UI:
+    Warm ivory background (#fdf9f3), crisp white container card, vector gold stars,
+    prominent employee details, QR code, and sleek high-contrast CTA button.
     Saves in both JPEG and PNG format.
     """
     card_width = 1080
     card_height = 1440
     
-    # 1. Base executive dark background (#0b1120)
-    card = Image.new('RGB', (card_width, card_height), (11, 17, 32))
+    # 1. Warm ivory background (#fdf9f3) matching website UI
+    card = Image.new('RGB', (card_width, card_height), (253, 249, 243))
     draw = ImageDraw.Draw(card)
     
-    # Accent top border
-    for i in range(14):
-        draw.line([(0, i), (card_width, i)], fill=(79, 70, 229))
+    # 2. Main White Card Container with warm subtle border (#ebd9c2)
+    margin = 44
+    draw.rounded_rectangle(
+        [(margin, margin), (card_width - margin, card_height - margin)],
+        radius=42,
+        fill=(255, 255, 255),
+        outline=(235, 217, 194),
+        width=3
+    )
 
-    # 2. Typography fonts
-    font_badge = _get_font(22, bold=True)
-    font_company = _get_font(34, bold=True)
+    # 3. Typography fonts
+    font_top = _get_font(22, bold=True)
+    font_company = _get_font(30, bold=True)
     font_name = _get_font(52, bold=True)
-    font_desig = _get_font(30, bold=False)
+    font_desig = _get_font(26, bold=True)
     font_cta = _get_font(26, bold=True)
     font_url = _get_font(24, bold=False)
     font_footer = _get_font(20, bold=False)
 
-    # 3. Top Badges & Company Branding
+    # 4. Header Badges & Company Branding
     draw.text(
-        (card_width // 2, 60),
-        "OFFICIAL DIGITAL PROFILE • VERIFIED CARD",
-        fill=(129, 140, 248),
-        font=font_badge,
+        (card_width // 2, 95),
+        "OFFICIAL DIGITAL PROFILE",
+        fill=(100, 116, 139),
+        font=font_top,
         anchor="mm"
     )
     
-    # Clean uppercase company name
     clean_company = str(company_name or 'NEXALOGIC TECHNO').strip().upper()
     draw.text(
-        (card_width // 2, 105),
+        (card_width // 2, 138),
         clean_company,
-        fill=(226, 232, 240),
+        fill=(15, 23, 42),
         font=font_company,
         anchor="mm"
     )
-    
-    # 4. White Container Card for QR Code
-    box_w = 760
-    box_h = 760
-    box_x = (card_width - box_w) // 2
-    box_y = 155
-    
+
+    # 5. Crisp Vector Gold Stars (5-Star Google Rating Badge)
+    start_x = (card_width // 2) - 88
+    for i in range(5):
+        _draw_star(draw, start_x + i * 44, 182, size=16, fill=(245, 158, 11))
+
+    # 6. QR Code Frame Container
+    frame_w = 680
+    frame_h = 680
+    frame_x = (card_width - frame_w) // 2
+    frame_y = 225
+
     draw.rounded_rectangle(
-        [(box_x, box_y), (box_x + box_w, box_y + box_h)],
-        radius=36,
-        fill=(255, 255, 255)
+        [(frame_x, frame_y), (frame_x + frame_w, frame_y + frame_h)],
+        radius=32,
+        fill=(252, 251, 249),
+        outline=(226, 232, 240),
+        width=2
     )
-    
-    # Resize and place QR in center
-    qr_display_size = 660
-    resized_qr = qr_image.resize((qr_display_size, qr_display_size), Image.Resampling.LANCZOS)
-    qr_x = box_x + (box_w - qr_display_size) // 2
-    qr_y = box_y + (box_h - qr_display_size) // 2
+
+    # Paste QR in center
+    qr_disp = 590
+    resized_qr = qr_image.resize((qr_disp, qr_disp), Image.Resampling.LANCZOS)
+    qr_x = frame_x + (frame_w - qr_disp) // 2
+    qr_y = frame_y + (frame_h - qr_disp) // 2
     card.paste(resized_qr, (qr_x, qr_y))
 
     # Optional Logo overlay in center of QR
     if company_logo_path and os.path.exists(company_logo_path):
         try:
             logo = Image.open(company_logo_path).convert("RGBA")
-            logo_size = 110
+            logo_size = 100
             logo = logo.resize((logo_size, logo_size), Image.Resampling.LANCZOS)
-            # White background behind logo
             logo_bg = Image.new('RGBA', (logo_size + 16, logo_size + 16), (255, 255, 255, 255))
-            card.paste(logo_bg, (qr_x + (qr_display_size - logo_size - 16) // 2, qr_y + (qr_display_size - logo_size - 16) // 2))
-            card.paste(logo, (qr_x + (qr_display_size - logo_size) // 2, qr_y + (qr_display_size - logo_size) // 2), mask=logo)
+            card.paste(logo_bg, (qr_x + (qr_disp - logo_size - 16) // 2, qr_y + (qr_disp - logo_size - 16) // 2))
+            card.paste(logo, (qr_x + (qr_disp - logo_size) // 2, qr_y + (qr_disp - logo_size) // 2), mask=logo)
         except Exception:
             pass
 
-    # 5. Employee Details Below QR
-    name_y = box_y + box_h + 65
-    draw.text((card_width // 2, name_y), str(employee_name or 'Team Member').strip(), fill=(255, 255, 255), font=font_name, anchor="mm")
-    
-    desig_y = name_y + 55
-    draw.text((card_width // 2, desig_y), str(designation or 'Digital Profile').strip(), fill=(56, 189, 248), font=font_desig, anchor="mm")
+    # 7. Employee Name & Designation Pill
+    display_name = str(employee_name or 'Team Member').strip()
+    name_y = frame_y + frame_h + 62
+    draw.text((card_width // 2, name_y), display_name, fill=(15, 23, 42), font=font_name, anchor="mm")
 
-    # 6. Action Button / Pill
-    pill_w = 560
-    pill_h = 64
+    display_desig = str(designation or 'Digital Profile').strip()
+    pill_text = f"{display_desig} • {clean_company.title()}"
+    desig_y = name_y + 55
+    text_w = len(pill_text) * 14 + 50
+    pill_w = max(420, min(text_w, 860))
+    pill_h = 48
     pill_x = (card_width - pill_w) // 2
-    pill_y = desig_y + 50
+    pill_top = desig_y - pill_h // 2
     draw.rounded_rectangle(
-        [(pill_x, pill_y), (pill_x + pill_w, pill_y + pill_h)],
+        [(pill_x, pill_top), (pill_x + pill_w, pill_top + pill_h)],
+        radius=24,
+        fill=(241, 245, 249),
+        outline=(203, 213, 225),
+        width=1
+    )
+    draw.text((card_width // 2, desig_y), pill_text, fill=(71, 85, 105), font=font_desig, anchor="mm")
+
+    # 8. High-Contrast Dark CTA Action Button (Matching Website UI)
+    btn_w = 560
+    btn_h = 64
+    btn_x = (card_width - btn_w) // 2
+    btn_y = desig_y + 55
+    draw.rounded_rectangle(
+        [(btn_x, btn_y), (btn_x + btn_w, btn_y + btn_h)],
         radius=32,
-        fill=(79, 70, 229)
+        fill=(15, 23, 42)
     )
     draw.text(
-        (card_width // 2, pill_y + pill_h // 2),
+        (card_width // 2, btn_y + btn_h // 2),
         "SCAN TO CONNECT & LEAVE REVIEW",
         fill=(255, 255, 255),
         font=font_cta,
         anchor="mm"
     )
 
-    # 7. URL Handle
+    # 9. Profile URL Handle
     clean_domain = Config.BASE_URL.replace("https://", "").replace("http://", "").rstrip("/")
     profile_url_text = f"{clean_domain}/{slug}" if slug else clean_domain
-    draw.text((card_width // 2, pill_y + pill_h + 40), profile_url_text, fill=(148, 163, 184), font=font_url, anchor="mm")
+    draw.text((card_width // 2, btn_y + btn_h + 40), profile_url_text, fill=(100, 116, 139), font=font_url, anchor="mm")
 
-    # 8. Footer
+    # 10. Footer
     draw.text(
-        (card_width // 2, card_height - 40),
-        "Instant Contact • Direct WhatsApp • Verified GMB Reviews",
-        fill=(100, 116, 139),
+        (card_width // 2, card_height - 90),
+        "Point camera to scan • Instant vCard & Google Reviews",
+        fill=(148, 163, 184),
         font=font_footer,
         anchor="mm"
     )
 
-    # 9. Save as both JPEG (high quality) and PNG
+    # 11. Save as both JPEG (high quality) and PNG
     try:
         card.save(str(output_jpg_path), format='JPEG', quality=95, optimize=True)
     except Exception:

@@ -392,9 +392,11 @@
             </div>
             
             <div class="qr-sublinks-row">
-              <a href="{{ url_for('qr.public_download_qr', slug=employee.slug, file_format='png') }}" download="{{ employee.slug }}-card.png">Card (PNG)</a>
+              <a href="{{ url_for('qr.public_download_qr', slug=employee.slug, file_format='branded') }}" download="{{ employee.slug }}-card.png">Card (PNG)</a>
               <span>•</span>
               <a href="{{ url_for('qr.public_download_qr', slug=employee.slug, file_format='raw') }}" download="{{ employee.slug }}-qr.png">QR Only</a>
+              <span>•</span>
+              <a href="{{ url_for('qr.public_download_qr', slug=employee.slug, file_format='svg') }}" download="{{ employee.slug }}-qr.svg">Vector (SVG)</a>
             </div>
           </div>
         </div>

@@ -1,9 +1,10 @@
 from flask import Blueprint, redirect, url_for, abort, send_file, request
-from services.employee_service import get_employee_by_slug, get_employee_by_id
+from services.employee_service import get_employee_by_slug, get_employee_by_id, get_company_settings
 from services.analytics_service import record_event
 from services.qr_service import generate_qr_code
 from config import Config
 from pathlib import Path
+import os
 
 qr_bp = Blueprint('qr', __name__)
 
@@ -14,6 +15,26 @@ def detect_device_type(user_agent_str):
     elif 'ipad' in ua or 'tablet' in ua:
         return 'tablet'
     return 'desktop'
+
+
+def _regenerate_employee_qr(emp):
+    """Helper to regenerate all QR asset formats for an employee with current branding."""
+    company_settings = get_company_settings()
+    company_name = company_settings.get('company_name', 'Nexalogic Techno')
+    logo_full_path = None
+    if emp.get('company_logo') and (Config.BASE_DIR / emp['company_logo']).exists():
+        logo_full_path = str(Config.BASE_DIR / emp['company_logo'])
+    elif company_settings.get('company_logo') and (Config.BASE_DIR / company_settings['company_logo']).exists():
+        logo_full_path = str(Config.BASE_DIR / company_settings['company_logo'])
+
+    return generate_qr_code(
+        slug=emp['slug'],
+        employee_id=emp['id'],
+        employee_name=f"{emp.get('first_name', '')} {emp.get('last_name', '')}".strip(),
+        designation=emp.get('designation', ''),
+        company_name=company_name,
+        company_logo_path=logo_full_path
+    )
 
 
 @qr_bp.route('/q/<slug>')
@@ -66,7 +87,7 @@ def download_qr(employee_id, file_format):
         filepath = Config.QR_PATH / filename
         mimetype = 'image/png'
         download_name = f"{slug}_digital_card.png"
-    elif file_format == 'png':
+    elif file_format in ('png', 'raw', 'raw_qr', 'plain'):
         filename = f"{slug}.png"
         filepath = Config.QR_PATH / filename
         mimetype = 'image/png'
@@ -81,12 +102,7 @@ def download_qr(employee_id, file_format):
         
     # Regenerate on-the-fly if file was deleted or missing
     if not filepath.exists():
-        generate_qr_code(
-            slug=slug,
-            employee_id=emp['id'],
-            employee_name=f"{emp['first_name']} {emp['last_name']}".strip(),
-            designation=emp.get('designation', '')
-        )
+        _regenerate_employee_qr(emp)
         
     if not filepath.exists():
         abort(404)
@@ -103,8 +119,8 @@ def download_qr(employee_id, file_format):
 @qr_bp.route('/qr/download/<slug>/<file_format>')
 def public_download_qr(slug, file_format='jpg'):
     """
-    Publicly accessible endpoint to download high-res branded JPEG/PNG card or raw QR code.
-    Allows employees or customers to export high quality image with name, role, and details.
+    Publicly accessible endpoint to download high-res branded JPEG/PNG card, raw QR code, or vector SVG.
+    Allows employees or customers to export high quality cards with name, role, and details.
     """
     slug = slug.strip().lower()
     emp = get_employee_by_slug(slug)
@@ -123,7 +139,7 @@ def public_download_qr(slug, file_format='jpg'):
         filepath = Config.QR_PATH / filename
         mimetype = 'image/png'
         download_name = f"{slug}_digital_card.png"
-    elif file_format in ('raw', 'raw_qr', 'png'):
+    elif file_format in ('raw', 'raw_qr', 'png', 'plain'):
         filename = f"{slug}.png"
         filepath = Config.QR_PATH / filename
         mimetype = 'image/png'
@@ -141,12 +157,7 @@ def public_download_qr(slug, file_format='jpg'):
         
     # Regenerate on-the-fly if file is missing
     if not filepath.exists():
-        generate_qr_code(
-            slug=slug,
-            employee_id=emp['id'],
-            employee_name=f"{emp['first_name']} {emp['last_name']}".strip(),
-            designation=emp.get('designation', '')
-        )
+        _regenerate_employee_qr(emp)
         
     if not filepath.exists():
         abort(404)
@@ -157,4 +168,5 @@ def public_download_qr(slug, file_format='jpg'):
         as_attachment=True,
         download_name=download_name
     )
+
 

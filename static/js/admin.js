@@ -209,9 +209,10 @@ document.addEventListener('DOMContentLoaded', () => {
       const modalQrImg = document.getElementById('modal-qr-image');
       const modalEmpName = document.getElementById('modal-emp-name');
       const modalProfileLink = document.getElementById('modal-profile-link');
+      const btnDownloadJpg = document.getElementById('btn-download-jpg');
+      const btnDownloadBranded = document.getElementById('btn-download-branded');
       const btnDownloadPng = document.getElementById('btn-download-png');
       const btnDownloadSvg = document.getElementById('btn-download-svg');
-      const btnDownloadBranded = document.getElementById('btn-download-branded');
 
       if (modalQrImg) modalQrImg.src = qrUrl;
       if (modalEmpName) modalEmpName.textContent = empName;
@@ -219,9 +220,10 @@ document.addEventListener('DOMContentLoaded', () => {
         modalProfileLink.href = profileUrl;
         modalProfileLink.textContent = profileUrl;
       }
+      if (btnDownloadJpg) btnDownloadJpg.href = `/admin/qr/download/${empId}/jpg`;
+      if (btnDownloadBranded) btnDownloadBranded.href = `/admin/qr/download/${empId}/branded`;
       if (btnDownloadPng) btnDownloadPng.href = `/admin/qr/download/${empId}/png`;
       if (btnDownloadSvg) btnDownloadSvg.href = `/admin/qr/download/${empId}/svg`;
-      if (btnDownloadBranded) btnDownloadBranded.href = `/admin/qr/download/${empId}/branded`;
 
       openModal('qr-preview-modal');
     });
