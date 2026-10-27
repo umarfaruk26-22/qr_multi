@@ -42,12 +42,18 @@
   <header class="public-topbar">
     <div class="topbar-inner">
       <div class="topbar-brand">
-        {% if not is_unavailable and employee and employee.profile_image %}
-          <img src="/{{ employee.profile_image }}" alt="{{ employee.first_name }}" class="topbar-logo-img">
-        {% elif company_settings.company_logo %}
+        {% if company_settings.company_logo %}
           <img src="/{{ company_settings.company_logo }}" alt="{{ company_settings.company_name }}" class="topbar-logo-img">
+        {% elif not is_unavailable and employee and employee.profile_image %}
+          <img src="/{{ employee.profile_image }}" alt="{{ employee.first_name }}" class="topbar-logo-img">
         {% else %}
-          <div class="topbar-logo-fallback">⭐</div>
+          <div class="topbar-logo-fallback" title="{{ company_settings.company_name }}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+              <polyline points="2 17 12 22 22 17"></polyline>
+              <polyline points="2 12 12 17 22 12"></polyline>
+            </svg>
+          </div>
         {% endif %}
         <span class="topbar-company-name">{{ company_settings.company_name }}</span>
       </div>
@@ -108,9 +114,11 @@
         <!-- 1. WYDdigi Style Header with Star and Business / Employee Title -->
         <div class="wyddigi-card-header">
           <div class="wyddigi-header-title-row">
-            <svg class="header-star-icon" width="34" height="34" viewBox="0 0 24 24" fill="#FFC107">
-              <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="#FF9800" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
+            <span class="header-verified-shield" title="Verified Digital Profile">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" fill="currentColor" fill-opacity="0.14"/>
+              </svg>
+            </span>
             <h1 class="wyddigi-agency-name">{{ employee.first_name }} {{ employee.last_name }}</h1>
           </div>
           {% if employee.designation %}
