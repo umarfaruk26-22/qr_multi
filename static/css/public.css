@@ -1726,6 +1726,7 @@ body.public-body-wyddigi {
   font-size: 0.78rem;
   font-weight: 700;
   color: var(--text-main);
+  white-space: nowrap;
 }
 
 .field-label .req-star {
@@ -1797,16 +1798,42 @@ body.public-body-wyddigi {
   font-size: 0.84rem;
 }
 
+.lead-input[type="date"] {
+  min-height: 44px;
+  cursor: pointer;
+}
+
+.lead-input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+  padding: 2px;
+  transition: opacity 0.2s ease;
+}
+
+.lead-input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+[data-theme="dark"] .lead-input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.85);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .lead-input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.85);
+  }
+}
+
 .lead-grid-2col {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 12px;
 }
 
 .lead-grid-3col {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
 }
 
 .lead-form-alert {
@@ -1989,17 +2016,13 @@ body.public-body-wyddigi {
   }
 
   .lead-grid-2col {
-    grid-template-columns: 1fr;
-    gap: 8px;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
   }
 
   .lead-grid-3col {
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-  }
-
-  .lead-grid-3col .lead-input-field:last-child {
-    grid-column: span 2;
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .floating-lead-btn {
@@ -2007,5 +2030,17 @@ body.public-body-wyddigi {
     right: 16px;
     padding: 9px 16px;
     font-size: 0.82rem;
+  }
+}
+
+@media (max-width: 440px) {
+  .lead-grid-2col:not(.lead-date-grid) {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 360px) {
+  .lead-grid-2col {
+    grid-template-columns: 1fr;
   }
 }
