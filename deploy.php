@@ -90,6 +90,8 @@ if (!$is_webhook) {
     @ob_flush(); @flush();
 }
 
+$env_export = "export PYTHONPATH=\"{$app_dir}:\$PYTHONPATH\" && export PATH=\"{$venv_bin}:/usr/local/bin:/usr/bin:/bin:\$PATH\"";
+
 // Step 2.5: Regenerate All Active Employee QR Assets
 $step_qr = [];
 $qr_cmd = "cd {$app_dir} && {$env_export} && {$venv_py} scripts/regenerate_qrs.py 2>&1";
@@ -107,7 +109,6 @@ if (!$is_webhook) {
 if (file_exists($socket_path)) @unlink($socket_path);
 if (file_exists($lock_file)) @unlink($lock_file);
 
-$env_export = "export PYTHONPATH=\"{$app_dir}:\$PYTHONPATH\" && export PATH=\"{$venv_bin}:/usr/local/bin:/usr/bin:/bin:\$PATH\"";
 $runner = file_exists($venv_py) ? "{$venv_py} -m gunicorn" : "{$venv_bin}/gunicorn";
 $full_cmd = "cd {$app_dir} && {$env_export} && nohup {$runner} --workers 2 --bind unix:{$socket_path} --bind {$host}:{$port} --timeout 120 --error-logfile {$error_log} --access-logfile {$access_log} --capture-output app:app > {$boot_log} 2>&1 < /dev/null &";
 @exec($full_cmd);
