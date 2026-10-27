@@ -85,5 +85,6 @@ def suggest_reviews():
         'gmb_url': gmb_url,
         'star_rating': star_rating,
         'categories': active_categories,
-        'reviews': result.get('reviews', [])
+        'reviews': result.get('reviews', []),
+        'single_review': result.get('reviews', [])[0] if result.get('reviews') else None
     })

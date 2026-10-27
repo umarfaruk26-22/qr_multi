@@ -45,18 +45,19 @@ def create_lead(employee_id, data, ip_address='', user_agent='', source='direct_
 
     name = str(data.get('name', '')).strip()
     phone = str(data.get('phone', '')).strip()
-    email = str(data.get('email', '')).strip().lower()
+    raw_email = str(data.get('email', '')).strip().lower()
     
     if not name:
         raise ValueError("Full Name is required.")
     if not phone:
         raise ValueError("Mobile Number is required.")
-    if not email:
-        raise ValueError("Email Address is required.")
         
     if not validate_phone(phone):
         raise ValueError("Please provide a valid mobile number.")
-    if not validate_email(email):
+        
+    clean_digits = re.sub(r'\D', '', phone) or 'user'
+    email = raw_email if raw_email else f"feedback_{clean_digits}@guest.local"
+    if raw_email and not validate_email(raw_email):
         raise ValueError("Please provide a valid email address.")
 
     dob = parse_date_safe(data.get('dob'))
