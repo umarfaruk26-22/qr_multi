@@ -92,7 +92,7 @@ if (!$is_webhook) {
 
 // Step 2.5: Regenerate All Active Employee QR Assets
 $step_qr = [];
-$qr_cmd = "cd {$app_dir} && {$venv_py} -c \"from services.employee_service import get_all_employees; from services.qr_service import generate_qr_code; emps = get_all_employees() or []; [generate_qr_code(slug=e['slug'], employee_id=e['id'], employee_name=f\\\"{e.get('first_name','') } {e.get('last_name','')}\\\".strip(), designation=e.get('designation','')) for e in emps]; print('Refreshed QR Cards for', len(emps), 'employees')\" 2>&1";
+$qr_cmd = "cd {$app_dir} && {$env_export} && {$venv_py} scripts/regenerate_qrs.py 2>&1";
 @exec($qr_cmd, $step_qr, $ret_qr);
 $results['qr_regen'] = ['code' => $ret_qr, 'output' => implode("\n", (array)$step_qr)];
 
