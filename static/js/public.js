@@ -448,38 +448,105 @@ document.addEventListener('DOMContentLoaded', () => {
   // ==========================================================================
   // Visitor Lead Modal (General Connect Form)
   // ==========================================================================
+  // Visitor Lead Capture Modal Handler (Clean WYDdigi Connect Form)
+  // ==========================================================================
   const leadModal = document.getElementById('visitor-lead-modal');
   const btnFloatingLead = document.getElementById('btn-floating-lead-trigger');
   const btnCloseLeadModal = document.getElementById('btn-close-lead-modal');
+  const leadBackdrop = leadModal ? leadModal.querySelector('.lead-modal-backdrop') : null;
+  const leadDragHandle = document.getElementById('lead-sheet-drag-handle');
+  const leadContainer = leadModal ? leadModal.querySelector('.lead-modal-container') : null;
   const leadForm = document.getElementById('visitor-lead-form');
   const leadFormError = document.getElementById('lead-form-error');
+  const submitBtn = document.getElementById('btn-submit-lead-form');
 
-  if (btnFloatingLead && leadModal) {
-    btnFloatingLead.addEventListener('click', () => {
-      leadModal.style.display = 'flex';
-      document.body.style.overflow = 'hidden';
-    });
+  const openLeadModal = () => {
+    if (!leadModal) return;
+    leadModal.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+    logEvent('lead_modal_opened');
+  };
+
+  const closeLeadModal = () => {
+    if (!leadModal) return;
+    leadModal.style.display = 'none';
+    document.body.style.overflow = '';
+    if (leadFormError) {
+      leadFormError.style.display = 'none';
+      leadFormError.textContent = '';
+    }
+  };
+
+  // Only open when user explicitly clicks the Connect button (NO auto popup on load)
+  if (btnFloatingLead) btnFloatingLead.addEventListener('click', openLeadModal);
+  if (btnCloseLeadModal) btnCloseLeadModal.addEventListener('click', closeLeadModal);
+  if (leadBackdrop) leadBackdrop.addEventListener('click', closeLeadModal);
+  if (leadDragHandle) leadDragHandle.addEventListener('click', closeLeadModal);
+
+  // Swipe-down to close on touch mobile devices
+  if (leadContainer) {
+    let leadTouchStartY = 0;
+    leadContainer.addEventListener('touchstart', (e) => {
+      if (leadContainer.scrollTop <= 5 && e.touches && e.touches[0]) {
+        leadTouchStartY = e.touches[0].clientY;
+      } else {
+        leadTouchStartY = 0;
+      }
+    }, { passive: true });
+
+    leadContainer.addEventListener('touchend', (e) => {
+      if (leadTouchStartY > 0 && e.changedTouches && e.changedTouches[0]) {
+        const diffY = e.changedTouches[0].clientY - leadTouchStartY;
+        if (diffY > 70) {
+          closeLeadModal();
+        }
+      }
+    }, { passive: true });
   }
 
-  if (btnCloseLeadModal && leadModal) {
-    btnCloseLeadModal.addEventListener('click', () => {
-      leadModal.style.display = 'none';
-      document.body.style.overflow = '';
-    });
-  }
-
+  // Handle Complete Form Submission
   if (leadForm) {
     leadForm.addEventListener('submit', async (e) => {
       e.preventDefault();
-      const submitBtn = document.getElementById('btn-submit-lead-form');
-      if (submitBtn) submitBtn.disabled = true;
+      if (leadFormError) {
+        leadFormError.style.display = 'none';
+        leadFormError.textContent = '';
+      }
 
       const formData = new FormData(leadForm);
+      const name = (formData.get('name') || '').trim();
+      const phone = (formData.get('phone') || '').trim();
+      const email = (formData.get('email') || '').trim();
+      const dob = (formData.get('dob') || '').trim();
+      const anniversary = (formData.get('anniversary') || '').trim();
+      const city = (formData.get('city') || '').trim();
+
+      if (!name) {
+        showLeadError('Please enter your full name.');
+        return;
+      }
+      if (!phone || phone.replace(/\D/g, '').length < 7) {
+        showLeadError('Please enter a valid mobile number (at least 7 digits).');
+        return;
+      }
+
+      const originalBtnHtml = submitBtn ? submitBtn.innerHTML : '';
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `
+          <svg class="spinner-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path></svg>
+          <span>Saving...</span>
+        `;
+      }
+
       const payload = {
         employee_id: employeeId,
-        name: formData.get('name'),
-        phone: formData.get('phone'),
-        email: formData.get('email') || '',
+        name: name,
+        phone: phone,
+        email: email,
+        dob: dob || null,
+        anniversary: anniversary || null,
+        city: city || null,
         source: 'floating_connect_modal'
       };
 
@@ -491,23 +558,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         const data = await res.json();
         if (data.success) {
-          showToast(`Thank you ${payload.name}, your details were sent!`);
-          leadModal.style.display = 'none';
-          document.body.style.overflow = '';
+          showToast(`Thank you ${name}, your details were sent!`, 4000);
           leadForm.reset();
+          closeLeadModal();
         } else {
-          if (leadFormError) {
-            leadFormError.textContent = data.message || 'Submission error';
-            leadFormError.style.display = 'block';
-          }
+          showLeadError(data.message || 'Submission error. Please check your details.');
         }
       } catch (err) {
-        showToast('Thank you! Details recorded.');
-        leadModal.style.display = 'none';
-        document.body.style.overflow = '';
+        console.error('Lead submit error:', err);
+        showLeadError('Unable to connect to server. Please try again.');
       } finally {
-        if (submitBtn) submitBtn.disabled = false;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalBtnHtml;
+        }
       }
     });
+  }
+
+  function showLeadError(msg) {
+    if (leadFormError) {
+      leadFormError.textContent = msg;
+      leadFormError.style.display = 'block';
+    } else {
+      showToast(msg);
+    }
   }
 });

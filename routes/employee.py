@@ -1,5 +1,6 @@
 import urllib.parse
-from flask import Blueprint, render_template, request, abort, redirect, url_for, Response
+import time
+from flask import Blueprint, render_template, request, abort, redirect, url_for, Response, make_response
 from services.employee_service import get_employee_by_slug, get_employee_categories
 from services.analytics_service import record_event
 from services.settings_service import get_company_settings
@@ -68,15 +69,20 @@ def public_profile(slug):
     whatsapp_url = f"https://wa.me/{whatsapp_number}?text={encoded_msg}" if whatsapp_number else None
     review_categories = get_employee_categories(emp)
 
-    return render_template(
+    response = make_response(render_template(
         'public/employee.html',
         employee=emp,
         settings=settings,
         whatsapp_url=whatsapp_url,
         review_categories=review_categories,
         is_unavailable=False,
-        base_url=Config.BASE_URL
-    )
+        base_url=Config.BASE_URL,
+        cache_buster=int(time.time())
+    ))
+    response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
 
 
 

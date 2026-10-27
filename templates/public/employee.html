@@ -22,7 +22,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}?v=20261027_v10">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}?v={{ cache_buster | default('20261027_v12') }}">
 {% endblock %}
 
 {% block body_class %}public-body-wyddigi{% endblock %}
@@ -482,38 +482,113 @@
     <div id="visitor-lead-modal" class="lead-modal-overlay" style="display: none;">
       <div class="lead-modal-backdrop"></div>
       <div class="lead-modal-container">
-        <div class="lead-modal-header">
-          <div>
-            <h3 class="lead-modal-title">Connect with {{ employee.first_name }}</h3>
-            <p class="lead-modal-subtitle">Leave your details to stay connected.</p>
-          </div>
-          <button type="button" id="btn-close-lead-modal" class="lead-modal-close-btn">&times;</button>
+        <!-- Touch drag bar for mobile -->
+        <div class="sheet-drag-handle" id="lead-sheet-drag-handle">
+          <div class="sheet-drag-bar"></div>
         </div>
 
-        <form id="visitor-lead-form" class="lead-capture-form">
+        <div class="lead-modal-header">
+          <div class="lead-header-text">
+            <div class="lead-badge-row">
+              <span class="lead-pill-badge">Direct Contact</span>
+              <span class="lead-verified-badge">✓ Verified Card</span>
+            </div>
+            <h3 class="lead-modal-title">Connect with {{ employee.first_name }} {{ employee.last_name }}</h3>
+            <p class="lead-modal-subtitle">Share your details to establish a direct connection and exchange contact information.</p>
+          </div>
+          <button type="button" id="btn-close-lead-modal" class="lead-modal-close-btn" aria-label="Cancel and Close Form" title="Cancel / Close">&times;</button>
+        </div>
+
+        <form id="visitor-lead-form" class="lead-capture-form" autocomplete="on">
           <input type="hidden" name="employee_id" value="{{ employee.id }}">
-          <div class="form-group">
-            <label for="lead-name">Full Name <span class="req-star">*</span></label>
-            <input type="text" id="lead-name" name="name" class="form-control-input" placeholder="Your name" required>
+          
+          <div class="lead-form-sections">
+            
+            <!-- Mandatory Details Group -->
+            <div class="lead-section-group">
+              <div class="lead-section-title-row">
+                <span class="lead-section-label">Required Information</span>
+                <span class="lead-tag-required">* Mandatory</span>
+              </div>
+
+              <div class="lead-input-field">
+                <label for="lead-name" class="field-label">Full Name <span class="req-star">*</span></label>
+                <div class="input-icon-wrap">
+                  <svg class="field-icon icon-name" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                  <input type="text" id="lead-name" name="name" class="lead-input" placeholder="Enter your full name" required>
+                </div>
+              </div>
+
+              <div class="lead-grid-2col">
+                <div class="lead-input-field">
+                  <label for="lead-phone" class="field-label">Mobile Number <span class="req-star">*</span></label>
+                  <div class="input-icon-wrap">
+                    <svg class="field-icon icon-phone" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                    <input type="tel" id="lead-phone" name="phone" class="lead-input" placeholder="e.g. 9876543210" required>
+                  </div>
+                </div>
+
+                <div class="lead-input-field">
+                  <label for="lead-email" class="field-label">Email Address <span class="req-star">*</span></label>
+                  <div class="input-icon-wrap">
+                    <svg class="field-icon icon-email" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
+                    <input type="email" id="lead-email" name="email" class="lead-input" placeholder="name@example.com" required>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Optional Additional Details Group -->
+            <div class="lead-section-group optional-group">
+              <div class="lead-section-title-row">
+                <span class="lead-section-label">Additional Details</span>
+                <span class="lead-tag-optional">Optional</span>
+              </div>
+
+              <div class="lead-grid-3col">
+                <div class="lead-input-field">
+                  <label for="lead-dob" class="field-label">Date of Birth</label>
+                  <div class="input-icon-wrap">
+                    <svg class="field-icon icon-dob" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+                    <input type="date" id="lead-dob" name="dob" class="lead-input">
+                  </div>
+                </div>
+
+                <div class="lead-input-field">
+                  <label for="lead-anniversary" class="field-label">Anniversary Date</label>
+                  <div class="input-icon-wrap">
+                    <svg class="field-icon icon-anniversary" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path></svg>
+                    <input type="date" id="lead-anniversary" name="anniversary" class="lead-input">
+                  </div>
+                </div>
+
+                <div class="lead-input-field">
+                  <label for="lead-city" class="field-label">City / Location</label>
+                  <div class="input-icon-wrap">
+                    <svg class="field-icon icon-city" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                    <input type="text" id="lead-city" name="city" class="lead-input" placeholder="e.g. Surat, Mumbai">
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
-          <div class="form-group">
-            <label for="lead-phone">Mobile Number <span class="req-star">*</span></label>
-            <input type="tel" id="lead-phone" name="phone" class="form-control-input" placeholder="Your mobile number" required>
-          </div>
-          <div class="form-group">
-            <label for="lead-email">Email Address <span class="opt-label">(Optional)</span></label>
-            <input type="email" id="lead-email" name="email" class="form-control-input" placeholder="Your email">
-          </div>
+
           <div id="lead-form-error" class="lead-form-alert" style="display: none;"></div>
-          <button type="submit" id="btn-submit-lead-form" class="btn-primary-action" style="width: 100%; justify-content: center; margin-top: 10px;">
-            <span>Submit Details</span>
-          </button>
+
+          <div class="lead-modal-actions-footer">
+            <button type="submit" id="btn-submit-lead-form" class="btn-lead-submit">
+              <span class="btn-submit-text">Submit Details</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
+            </button>
+          </div>
         </form>
       </div>
     </div>
 
     <!-- Floating Connect Button -->
     <button type="button" id="btn-floating-lead-trigger" class="floating-lead-btn" title="Connect with {{ employee.first_name }}">
+      <span class="floating-pulse-dot"></span>
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
       <span>Connect</span>
     </button>
@@ -531,5 +606,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/public.js') }}?v=20261027_3"></script>
+<script src="{{ url_for('static', filename='js/public.js') }}?v={{ cache_buster | default('20261027_v12') }}"></script>
 {% endblock %}
