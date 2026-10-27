@@ -22,7 +22,7 @@
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}?v=20261027_2">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/public.css') }}?v=20261027_3">
 {% endblock %}
 
 {% block body_class %}public-body-wyddigi{% endblock %}
@@ -53,6 +53,28 @@
       </div>
 
       <div class="topbar-actions">
+        <!-- Theme Toggle (Light / Dark) -->
+        <button id="btn-theme-toggle" class="topbar-theme-btn" type="button" aria-label="Toggle Light or Dark Theme" title="Switch Theme">
+          <span class="theme-icon-sun">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          </span>
+          <span class="theme-icon-moon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+            </svg>
+          </span>
+        </button>
+
         <button id="btn-topbar-share" class="topbar-share-btn" type="button" title="Share Profile">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="18" cy="5" r="3"></circle>
@@ -506,5 +528,5 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{{ url_for('static', filename='js/public.js') }}?v=20261027_2"></script>
+<script src="{{ url_for('static', filename='js/public.js') }}?v=20261027_3"></script>
 {% endblock %}

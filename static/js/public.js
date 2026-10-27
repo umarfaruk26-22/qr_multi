@@ -40,6 +40,50 @@ document.addEventListener('DOMContentLoaded', () => {
     }, duration);
   };
 
+  // ==========================================================================
+  // Dynamic Theme Controller (Auto Device Adapt + Manual Interactive Toggle)
+  // ==========================================================================
+  const themeToggleBtn = document.getElementById('btn-theme-toggle');
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+  const getEffectiveTheme = () => {
+    const saved = localStorage.getItem('app_theme');
+    if (saved === 'dark' || saved === 'light') return saved;
+    return mediaQuery.matches ? 'dark' : 'light';
+  };
+
+  const applyTheme = (theme, persist = false) => {
+    document.documentElement.setAttribute('data-theme', theme);
+    if (persist) {
+      localStorage.setItem('app_theme', theme);
+    }
+    if (themeToggleBtn) {
+      themeToggleBtn.setAttribute('title', theme === 'dark' ? 'Switch to Light Theme' : 'Switch to Dark Theme');
+    }
+  };
+
+  // Sync initial state
+  applyTheme(getEffectiveTheme(), false);
+
+  // Manual Toggle Button
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || getEffectiveTheme();
+      const next = current === 'dark' ? 'light' : 'dark';
+      applyTheme(next, true);
+      showToast(next === 'dark' ? '🌙 Dark Mode Activated' : '☀️ Light Mode Activated', 2200);
+      logEvent(`theme_switched_${next}`);
+    });
+  }
+
+  // Automatic Device System Theme Listener
+  mediaQuery.addEventListener('change', (e) => {
+    // Only adapt automatically if user hasn't set an explicit override in localStorage
+    if (!localStorage.getItem('app_theme')) {
+      applyTheme(e.matches ? 'dark' : 'light', false);
+    }
+  });
+
   // Copy to Clipboard
   const copyToClipboard = async (text, successMsg = 'Copied to clipboard!') => {
     try {
