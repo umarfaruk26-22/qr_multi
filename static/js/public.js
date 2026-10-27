@@ -166,6 +166,22 @@ document.addEventListener('DOMContentLoaded', () => {
     qrCopyLinkBtn.addEventListener('click', () => {
       copyToClipboard(profileUrl, 'Profile link copied to clipboard!');
       logEvent('qr_link_copied');
+
+      const copyIcon = qrCopyLinkBtn.querySelector('.icon-copy');
+      const copiedIcon = qrCopyLinkBtn.querySelector('.icon-copied');
+      const copyLabel = qrCopyLinkBtn.querySelector('.copy-label');
+
+      qrCopyLinkBtn.classList.add('copied');
+      if (copyIcon) copyIcon.style.display = 'none';
+      if (copiedIcon) copiedIcon.style.display = 'inline-block';
+      if (copyLabel) copyLabel.textContent = 'Copied!';
+
+      setTimeout(() => {
+        qrCopyLinkBtn.classList.remove('copied');
+        if (copyIcon) copyIcon.style.display = 'inline-block';
+        if (copiedIcon) copiedIcon.style.display = 'none';
+        if (copyLabel) copyLabel.textContent = 'Copy Link';
+      }, 2000);
     });
   }
 

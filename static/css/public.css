@@ -873,63 +873,204 @@ body.public-body-wyddigi {
 
 .qr-buttons-row {
   display: flex;
-  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
   width: 100%;
-  max-width: 380px;
-  margin-top: 4px;
+  max-width: 420px;
+  margin-top: 10px;
 }
 
 .btn-qr-action {
   flex: 1;
-  display: flex;
+  min-width: 0;
+  height: 48px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  font-size: 0.82rem;
+  gap: 8px;
+  font-size: 0.90rem;
   font-weight: 700;
-  padding: 10px 14px;
+  padding: 0 16px;
   border-radius: var(--radius-full);
   text-decoration: none;
   cursor: pointer;
-  border: 1px solid var(--border-light);
-  transition: all 0.2s ease;
+  white-space: nowrap;
+  letter-spacing: -0.01em;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+  user-select: none;
 }
 
+/* 1. Download Card Button (High-Contrast Primary) */
 .btn-qr-download {
-  background: var(--btn-vcard-bg);
+  background: #0f172a;
   color: #ffffff;
-  border-color: transparent;
+  border: 1.5px solid #0f172a;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.16);
 }
 .btn-qr-download:hover {
-  background: var(--btn-vcard-hover);
+  background: #1e293b;
+  border-color: #1e293b;
   color: #ffffff;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.24);
+}
+.btn-qr-download:active {
+  transform: translateY(0);
 }
 
+/* 2. Copy Link Button (Clean Structured Secondary) */
 .btn-qr-copy {
   background: var(--bg-card);
   color: var(--text-main);
+  border: 1.5px solid var(--border-light);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 .btn-qr-copy:hover {
   background: var(--bg-card-subtle);
+  border-color: var(--text-light);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+}
+.btn-qr-copy:active {
+  transform: translateY(0);
+}
+.btn-qr-copy.copied {
+  background: #ecfdf5 !important;
+  border-color: #10b981 !important;
+  color: #059669 !important;
 }
 
-.qr-sublinks-row {
+/* Dark Mode Overrides for QR Action Buttons */
+[data-theme="dark"] .btn-qr-download {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #ffffff;
+  box-shadow: 0 4px 18px rgba(255, 255, 255, 0.12);
+}
+[data-theme="dark"] .btn-qr-download:hover {
+  background: #f1f5f9;
+  border-color: #f1f5f9;
+  color: #0f172a;
+  box-shadow: 0 8px 24px rgba(255, 255, 255, 0.22);
+}
+
+[data-theme="dark"] .btn-qr-copy {
+  background: #1e293b;
+  color: #f8fafc;
+  border: 1.5px solid #334155;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+[data-theme="dark"] .btn-qr-copy:hover {
+  background: #27354a;
+  border-color: #475569;
+  color: #ffffff;
+}
+[data-theme="dark"] .btn-qr-copy.copied {
+  background: #064e3b !important;
+  border-color: #059669 !important;
+  color: #34d399 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .btn-qr-download {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #ffffff;
+    box-shadow: 0 4px 18px rgba(255, 255, 255, 0.12);
+  }
+  :root:not([data-theme="light"]) .btn-qr-download:hover {
+    background: #f1f5f9;
+    border-color: #f1f5f9;
+    color: #0f172a;
+    box-shadow: 0 8px 24px rgba(255, 255, 255, 0.22);
+  }
+  :root:not([data-theme="light"]) .btn-qr-copy {
+    background: #1e293b;
+    color: #f8fafc;
+    border: 1.5px solid #334155;
+  }
+  :root:not([data-theme="light"]) .btn-qr-copy:hover {
+    background: #27354a;
+    border-color: #475569;
+    color: #ffffff;
+  }
+  :root:not([data-theme="light"]) .btn-qr-copy.copied {
+    background: #064e3b !important;
+    border-color: #059669 !important;
+    color: #34d399 !important;
+  }
+}
+
+/* 3. Sleek Format Selector Chips */
+.qr-format-selector {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.76rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+  width: 100%;
+}
+
+.format-hint {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   color: var(--text-light);
-  margin-top: 2px;
+  margin-right: 2px;
 }
 
-.qr-sublinks-row a {
-  color: #4f46e5;
-  text-decoration: none;
+.format-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: var(--radius-full);
+  font-size: 0.74rem;
   font-weight: 600;
+  text-decoration: none;
+  background: var(--bg-card-subtle);
+  color: var(--text-muted);
+  border: 1px solid var(--border-light);
+  transition: all 0.16s ease;
 }
 
-[data-theme="dark"] .qr-sublinks-row a {
-  color: #818cf8;
+.format-pill:hover {
+  background: var(--border-light);
+  color: var(--text-main);
+  transform: translateY(-1px);
+}
+
+.format-pill.active {
+  background: #0f172a;
+  color: #ffffff;
+  border-color: #0f172a;
+}
+
+[data-theme="dark"] .format-pill.active {
+  background: #ffffff;
+  color: #0f172a;
+  border-color: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .format-pill.active {
+    background: #ffffff;
+    color: #0f172a;
+    border-color: #ffffff;
+  }
+}
+
+@media (max-width: 360px) {
+  .qr-buttons-row {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .btn-qr-action {
+    width: 100%;
+  }
 }
 
 /* ==========================================================================
