@@ -82,11 +82,22 @@ if (!file_exists($venv_py)) {
 }
 
 $step2 = [];
-@exec("cd {$app_dir} && {$venv_bin}/pip install --upgrade pip 2>&1 && {$venv_bin}/pip install -r requirements.txt gunicorn 2>&1", $step2, $ret2);
+@exec("cd {$app_dir} && {$venv_bin}/pip install -r requirements.txt gunicorn 2>&1", $step2, $ret2);
 $results['pip_install'] = ['code' => $ret2, 'output' => implode("\n", (array)$step2)];
 
 if (!$is_webhook) {
     echo "<div class='step'><div class='step-title'>📦 2. Python Virtualenv & Pip Install " . ($ret2 === 0 ? "<span class='badge-ok'>✅ Success</span>" : "<span class='badge-err'>⚠️ Exit {$ret2}</span>") . "</div><pre>" . htmlspecialchars(substr($results['pip_install']['output'], -1500)) . "</pre></div>";
+    @ob_flush(); @flush();
+}
+
+// Step 2.5: Regenerate All Active Employee QR Assets
+$step_qr = [];
+$qr_cmd = "cd {$app_dir} && {$venv_py} -c \"from services.employee_service import get_all_employees; from services.qr_service import generate_qr_code; emps = get_all_employees() or []; [generate_qr_code(slug=e['slug'], employee_id=e['id'], employee_name=f\\\"{e.get('first_name','') } {e.get('last_name','')}\\\".strip(), designation=e.get('designation','')) for e in emps]; print('Refreshed QR Cards for', len(emps), 'employees')\" 2>&1";
+@exec($qr_cmd, $step_qr, $ret_qr);
+$results['qr_regen'] = ['code' => $ret_qr, 'output' => implode("\n", (array)$step_qr)];
+
+if (!$is_webhook) {
+    echo "<div class='step'><div class='step-title'>🎨 2.5. QR Card Asset Sync " . ($ret_qr === 0 ? "<span class='badge-ok'>✅ Success</span>" : "<span class='badge-err'>⚠️ Note</span>") . "</div><pre>" . htmlspecialchars($results['qr_regen']['output']) . "</pre></div>";
     @ob_flush(); @flush();
 }
 
